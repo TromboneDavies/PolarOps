@@ -45,11 +45,11 @@ reddit = praw.Reddit("sensor1")
 # Create a "Subreddit" object for the r/textdatamining subreddit.
 tdm = reddit.subreddit("textdatamining")
 
-#print("=== new r/textdatamining submissions ===")
-#print_submissions(tdm.new(limit=10))
+print("=== new r/textdatamining submissions ===")
+print_submissions(tdm.new(limit=10))
 
 print("=== r/textdatamining submissions matching 'nltk' ===")
-#print_submissions(tdm.search("selftext:nltk",limit=10))
+print_submissions(tdm.search("selftext:nltk",limit=10))
 
 print("=== ALL submissions matching a search string ===")
 print_submissions(reddit.subreddit("all").search("selftext:sheri tepper",limit=10))
