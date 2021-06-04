@@ -29,6 +29,9 @@
 import praw
 
 
+polarized = open("polarized.txt","w")
+nonpolarized = open("nonpolarized.txt","w")
+
 def print_submissions(subs):
     for sub in subs:
         print("\n---------------------------------------------------------")
@@ -37,6 +40,11 @@ def print_submissions(subs):
             print(sub.selftext)
         else:
             print("No text.")
+        ans = input("Now was that polarized, do ya think? ")
+        if ans == "y":
+            print(sub.selftext, file=polarized)
+        else:
+            print(sub.selftext, file=nonpolarized)
 
 
 # Create a "Reddit" object, using a particular bot specified in praw.ini.
@@ -53,3 +61,6 @@ print_submissions(tdm.search("selftext:nltk",limit=10))
 
 print("=== ALL submissions matching a search string ===")
 print_submissions(reddit.subreddit("all").search("selftext:sheri tepper",limit=10))
+
+nonpolarized.close()
+polarized.close()
