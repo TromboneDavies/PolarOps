@@ -2,11 +2,19 @@ import praw
 
 #Returns a string of all the entire thread of a comment
 def get_thread(top_level_comment, tab, final):
+    first = True
     if hasattr(top_level_comment, "body"):
-        for i in range(tab):
-            final = final + "\t"
+        lines = top_level_comment.body.split("\n")
+        for line in lines:
 
-        final = final + ">" + top_level_comment.body + "\n"
+            for i in range(tab):
+                final = final + "\t"
+
+            if first:
+                final = final + ">"
+                first = False
+
+            final = final + line + "\n"
 
         for comment in top_level_comment._replies:
             final = get_thread(comment, tab + 1, final)
@@ -28,7 +36,7 @@ legit = ["1", "2", "3", "4"]
 comma = ","
 
 #For every top comment in a submission, print its thread
-for submission in tdm.new(limit = 500):
+for submission in tdm.hot(limit = 500):
     submission.comments.replace_more(limit=0)
     for top_level_comment in reddit.submission(submission).comments:
         print("------------------------------------------------------------")
