@@ -1,5 +1,6 @@
 import praw
 
+#Returns a string of all the entire thread of a comment
 def get_thread(top_level_comment, tab, final):
     if hasattr(top_level_comment, "body"):
         for i in range(tab):
@@ -12,8 +13,10 @@ def get_thread(top_level_comment, tab, final):
 
     return final
 
+#Create a reddit instance
 reddit = praw.Reddit("sensor1")
 
+#Ask user questions to prepare for hand tagging
 sub = input("What is the name of the reddit you would like to handtag?\n")
 tdm = reddit.subreddit(sub)
 name = input("Where would you like your data to go? (Data will be appended)\n")
@@ -24,7 +27,8 @@ tt = ""
 legit = ["1", "2", "3", "4"]
 comma = ","
 
-for submission in tdm.hot(limit = 500):
+#For every top comment in a submission, print its thread
+for submission in tdm.new(limit = 500):
     submission.comments.replace_more(limit=0)
     for top_level_comment in reddit.submission(submission).comments:
         print("------------------------------------------------------------")
@@ -37,6 +41,8 @@ for submission in tdm.hot(limit = 500):
         if tt == "exit":
             break
 
+        #If the user typed a valid classification, write the info to the CSV
+        #file
         if tt in legit:
             write = [sub, top_level_comment.link_id, top_level_comment.id, '"' + words + '"', str(tt), user, str(top_level_comment.created_utc)]
             f.write(comma.join(write) + "\n")
