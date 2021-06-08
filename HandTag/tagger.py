@@ -42,8 +42,7 @@ for submission in tdm.hot(limit = 500):
         print("------------------------------------------------------------")
         words = get_thread(top_level_comment, 0, "").replace('"', "'")
         print(words)
-        words = words.replace("\n", " ")
-        words = words.replace("\t", "")
+        words = words.replace("\n", "\\n")
         tt = input()
 
         if tt == "exit":
