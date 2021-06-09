@@ -13,10 +13,7 @@ def get_thread(top_level_comment, tab, final):
             if first:
                 final = final + ">"
                 first = False
-
-            final = final + line + "\n"
-
-        for comment in top_level_comment._replies:
+final = final + line + "\n" for comment in top_level_comment._replies:
             final = get_thread(comment, tab + 1, final)
 
     return final
@@ -56,3 +53,6 @@ for submission in tdm.hot(limit = 500):
 
     if tt == "exit":
         break
+
+f.flush()
+f.close()
