@@ -39,7 +39,7 @@ def get_thread(top_level_comment, tab, final):
     return final
 
 #Ask user questions to prepare for hand tagging
-existing_file = input("What is the name of the existing data file?" +
+existing_file = input("What is the name of the existing data file? " +
     "(Hint: it should NOT begin with \"piggied_\".)\n")
 while not os.path.isfile(existing_file):
     existing_file = input("No such file! Try again:\n")
@@ -55,12 +55,14 @@ tt = ""
 legit = ["1", "2", "3", "4"]
 comma = ","
 
-subreddits = preexisting.Subreddit
-submissionIDs = preexisting.SubmissionID
-commentIDs = preexisting.CommentID
-texts = preexisting.text
+subreddits = preexisting.Subreddit.copy()
+submissionIDs = preexisting.SubmissionID.copy()
+commentIDs = preexisting.CommentID.copy()
+texts = preexisting.text.copy()
 ttypes = { name : np.repeat(-99,len(preexisting)) for name in assessors }
-dates = preexisting.date
+ttypes[old_assessor] = preexisting.ttype.copy()
+dates = preexisting.date.copy()
+
 
 for i,thread in enumerate(preexisting.itertuples()):
     print(thread.text.replace("\\n","\n"))
@@ -73,7 +75,6 @@ for i,thread in enumerate(preexisting.itertuples()):
     submissionIDs[i] = preexisting.iloc[i].SubmissionID
     commentIDs[i] = preexisting.iloc[i].CommentID
     texts[i] = preexisting.iloc[i].text
-    ttypes[old_assessor][i] = preexisting.iloc[i].ttype
     ttypes[user][i] = tt
     dates[i] = preexisting.iloc[i].date
  
