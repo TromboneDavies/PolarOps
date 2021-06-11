@@ -58,7 +58,8 @@ for i,thread in enumerate(preexisting.itertuples()):
         print("You already assessed this as {}.".format(preexisting.iloc[i][user]))
         new_assessments[i] = preexisting.iloc[i][user]
     else:
-        tt = input("What thread type is thread {}/{}, {}? (1,2,3,4,exit)".
+        tt = input("\n=============================================\n" +
+            "What thread type is thread {}/{}, {}? (1,2,3,4,exit) ".
             format(i+1,len(preexisting),user))
         if tt == "exit":
             break
