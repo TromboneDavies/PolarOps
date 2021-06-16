@@ -81,13 +81,13 @@ with open(TRAINING_FILE,"a",encoding="utf-8") as f:
             ttype = input("Choose 1/2/3/4 ttype, " +
                 "or 0 to exclude from training data. ")
         if ttype != "0":
-            community = "hetero" if ttype in [1,2] else "homo"
-            polarized = "yes" if ttype in [1,4] else "no"
+            community = "hetero" if int(ttype) in [1,2] else "homo"
+            polarized = "yes" if int(ttype) in [1,4] else "no"
             print(",".join([
                 first_row.Subreddit,
                 first_row.SubmissionID,
                 first_row.CommentID,
-                first_row.text,
+                "\"" + first_row.text + "\"",
                 str(first_row.date),
                 ttype,
                 community,
