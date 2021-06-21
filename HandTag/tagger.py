@@ -1,6 +1,5 @@
 import praw
 
-
 #Returns a string of all the entire thread of a comment
 def get_thread(top_level_comment, tab, final):
     first = True
