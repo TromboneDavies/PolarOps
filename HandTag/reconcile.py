@@ -8,7 +8,6 @@ import os
 import sys
 import subprocess
 
-
 # The file in which to put reconciled training examples. This script will
 # append to the file if it already exists.
 TRAINING_FILE = "training_data.csv"
