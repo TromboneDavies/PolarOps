@@ -58,13 +58,23 @@ word_features = [word[0] for word in all_words.most_common()[:300]]
 featuresets = [(document_features(d), c) for (d,c) in documents]
 
 
-size = int(len(featuresets)/2)
+size = int(input("What n-fold cross validation would you like to use?\n"))
 
-# Train and tests a Naive Bayes classifier
-train_set = featuresets[int(size * .7):]
-test_set = featuresets[:int(size * .3)]
-classifier = nltk.NaiveBayesClassifier.train(train_set)
+# Train and tests a Naive Bayes classifier using n-fold cross validation
+curr = 0
+count = 0
+temp = 0
+while curr < len(featuresets):
+    train_set = []
+    test_set = []
+    count = count + 1
+    for i in range(len(featuresets)):
+        if i in range(curr, curr + size):
+            train_set.append(featuresets[i])
+        else:
+            test_set.append(featuresets[i])
+    classifier = nltk.NaiveBayesClassifier.train(train_set)
+    temp = temp + nltk.classify.accuracy(classifier, test_set)
+    curr = curr + size
 
-# Print classifier accuracy and most informative features
-print(nltk.classify.accuracy(classifier, test_set))
-classifier.show_most_informative_features(10)
+print(str.format("Average accuracy after {} trials: {}", count, temp/count))
