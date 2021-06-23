@@ -9,6 +9,8 @@ from nltk.tokenize import word_tokenize
 
 # Removes punctuation and capitalization from a string
 def remove_punct(post):
+    post = post.replace("\\n", "")
+    post = post.replace(">", " newcomment ")
     punctuation = string.punctuation 
     for element in punctuation:
         post = post.replace(element, "")
@@ -22,8 +24,26 @@ def remove_punct(post):
 def document_features(document):
     document_words = set(document)
     features = {}
+    temp = 0
+    links = 0
+    num_comments = 0
     for word in word_features:
         features[word] = (word in document_words)
+    for word in document:
+        temp = temp + len(word)
+        if  "newcom" in word:
+            num_comments = num_comments + 1
+        if "http" in word:
+            links = links + 1
+
+    features["Average Word Length"] = temp/len(document)
+
+    if num_comments == 0:
+        num_comments = 1
+
+    features["Frequency of Links"] = links/num_comments
+    features["Number of Comments"] = num_comments
+
     return features
 
 # Opens a file and reads in all the posts
@@ -49,14 +69,10 @@ for index in posts.index:
         # Store edited string as a new labeled document
         documents.append((legitWords, posts['polarized'][index]))
 
-# Shuffle documents
-random.shuffle(documents)
-
 
 all_words = nltk.FreqDist(w.lower() for w in words)
 word_features = [word[0] for word in all_words.most_common()[:300]]
 featuresets = [(document_features(d), c) for (d,c) in documents]
-
 
 size = int(input("What n-fold cross validation would you like to use?\n"))
 
@@ -70,11 +86,12 @@ while curr < len(featuresets):
     count = count + 1
     for i in range(len(featuresets)):
         if i in range(curr, curr + size):
-            train_set.append(featuresets[i])
-        else:
             test_set.append(featuresets[i])
+        else:
+            train_set.append(featuresets[i])
     classifier = nltk.NaiveBayesClassifier.train(train_set)
     temp = temp + nltk.classify.accuracy(classifier, test_set)
+    classifier.show_most_informative_features(10)
     curr = curr + size
 
 print(str.format("Average accuracy after {} trials: {}", count, temp/count))
