@@ -10,6 +10,7 @@ from nltk.tokenize import word_tokenize
 # Removes punctuation and capitalization from a string
 def remove_punct(post):
     post = post.replace("\\n", "")
+    post = post.replace(">>", " inthreadquote newcomment ")
     post = post.replace(">", " newcomment ")
     punctuation = string.punctuation 
     for element in punctuation:
@@ -27,14 +28,18 @@ def document_features(document):
     temp = 0
     links = 0
     num_comments = 0
+    num_in_thread_quotes = 0
     for word in word_features:
         features[word] = (word in document_words)
     for word in document:
-        temp = temp + len(word)
-        if  "newcom" in word:
+        if "newcom" in word:
             num_comments = num_comments + 1
-        if "http" in word:
+        elif "inthreadquot" in word:
+            num_in_thread_quotes = num_in_thread_quotes + 1
+        elif "http" in word:
             links = links + 1
+        else:
+            temp = temp + len(word)
 
     features["Average Word Length"] = temp/len(document)
 
@@ -42,8 +47,9 @@ def document_features(document):
         num_comments = 1
 
     features["Frequency of Links"] = links/num_comments
-    features["Number of Comments"] = num_comments
+    #features["Number of Comments"] = num_comments
 
+    features["Frequency of in-thread quotes"] = num_in_thread_quotes/num_comments
     return features
 
 # Opens a file and reads in all the posts
