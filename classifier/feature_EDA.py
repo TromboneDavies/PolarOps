@@ -175,4 +175,14 @@ plt.plot(x_vals,np_kde(x_vals))
 plt.title("Number of Comments in Non-Polarized")
 plt.show()
     
-    
+#----- Subreddits' balance between Polarized and Non-Polarized -----
+a=pd.read_csv("training_data.csv")
+b=pd.crosstab(a.polarized,a.Subreddit,margins=True)
+c=(b.div(b.loc["All"],axis=1)*100)
+
+
+
+
+
+
+
