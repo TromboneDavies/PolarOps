@@ -1,6 +1,6 @@
-#A lot of this is from TJ's classifier and I'm sure there's a better
-#way to do this instead of repeating so much but if you run all
-#I promise it works
+#A lot of this is from TJ's classifier (so some # comments may be his
+#and I'm sure there's a better way to do this instead of repeating so 
+#much (it is VERY repetitive) but if you run all I promise it works
 
 import string
 import numpy as np
@@ -30,7 +30,7 @@ documents = []
 
 # Iterate through dataframe's rows
 for index in posts.index:
-        # Remove punctuation/stopwords, tokenize, and stem
+        # Remove punctuation/stopwords, tokenize
         legitWords = []
         post = remove_punct(posts['text'][index])
         for w in word_tokenize(post):
@@ -45,7 +45,8 @@ for index in posts.index:
 pwords = [ x for (x,y) in documents if y == "yes" ]
 npwords = [ x for (x,y) in documents if y == "no" ]
 
-#----- Frequency of 20 most common words ----
+
+#----- Frequency of 20 most common words (no stop words) ----
 
 from nltk.probability import FreqDist
 import pandas as pd
@@ -68,7 +69,8 @@ fig, ax = plt.subplots(figsize=(10,10))
 sns.barplot(x=npfreq.index, y=npfreq.values, ax=ax).set(title='Frequency of the 20 Most Common Non-Polarized Words')
 plt.show()
 
-#----- Average Word Length in a thread -----
+
+#----- Average Word Length in a thread (no stop words) -----
 
 from statistics import mean
 import numpy as np
@@ -106,6 +108,49 @@ plt.plot(x_vals,np_kde(x_vals))
 plt.title("Average Word Length of Non-Polarized")
 plt.show()
 
+
+#----- Number of Words Per Thread -----
+
+def wordcount(lis,empty):
+    for x in lis:
+        empty.append(len(x))
+
+#this does NOT have stop words
+all_threads=pwords+npwords
+nsw_wordcounts=[]
+wordcount(all_threads,nsw_wordcounts)
+plt.hist(nsw_wordcounts, bins=15, range=(0,2000))
+plt.title("Number of Words Per Thread (w/out Stop Words)")
+plt.show()
+
+#this DOES have stop words
+words = []
+documents = []
+
+# Iterate through dataframe's rows
+for index in posts.index:
+        # Remove punctuation, tokenize
+        legitWords = []
+        post = remove_punct(posts['text'][index])
+        for w in word_tokenize(post):
+            legitWords.append(w)
+            words.append(w)
+
+        # Store edited string as a new labeled document
+        documents.append((legitWords, posts['polarized'][index]))
+        
+        
+pwords = [ x for (x,y) in documents if y == "yes" ]
+npwords = [ x for (x,y) in documents if y == "no" ]
+
+all_threads=pwords+npwords
+wsw_wordcounts=[]
+wordcount(all_threads,wsw_wordcounts)
+plt.hist(wsw_wordcounts, bins=15)
+plt.title("Number of Words Per Thread (w/ Stop Words)")
+plt.show()
+
+
 #----- Number of comments in a thread -----
 
 def remove_punct_andadd(post):
@@ -130,7 +175,7 @@ documents = []
 
 # Iterate through dataframe's rows
 for index in posts.index:
-        # Remove punctuation/stopwords, tokenize, and stem
+        # Remove punctuation/stopwords, tokenize
         legitWords = []
         post = remove_punct_andadd(posts['text'][index])
         for w in word_tokenize(post):
@@ -175,14 +220,9 @@ plt.plot(x_vals,np_kde(x_vals))
 plt.title("Number of Comments in Non-Polarized")
 plt.show()
     
+
 #----- Subreddits' balance between Polarized and Non-Polarized -----
 a=pd.read_csv("training_data.csv")
 b=pd.crosstab(a.polarized,a.Subreddit,margins=True)
 c=(b.div(b.loc["All"],axis=1)*100)
-
-
-
-
-
-
 
