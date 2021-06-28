@@ -8,7 +8,7 @@ api = PushshiftAPI(r)
 start_epoch=int(dt.datetime(2010, 1, 1).timestamp())
 
 posts =  list(api.search_submissions(before=start_epoch, subreddit='politics',
-                                                                limit=10))
+                                                                limit=1000000))
 f = open("data.txt", "w")
 
 for post in posts:
