@@ -39,8 +39,10 @@ subreddit = r.subreddit(sub)
 posts =  list(api.search_submissions(after=start_epoch, subreddit=sub,
                                                                 limit=n))
 #CSV file
+header = ['subreddit','submission_id','comment_id','text','date']
 with open('data.csv', 'a') as f:
     data = csv.writer(f)
+    data.writerow(header)
 
     #Loop through posts and put their threads in a csv file
     final = ""
@@ -52,6 +54,5 @@ with open('data.csv', 'a') as f:
                 words = words.replace("\n", "\\n")
                 write = [sub, top_level_comment.link_id, top_level_comment.id, '"' + words + '"', str(top_level_comment.created_utc)]
                 f.write(comma.join(write) + "\n")
-
-    f.flush()
+                f.flush()
     f.close()
