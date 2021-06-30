@@ -1,5 +1,7 @@
 import praw
 import datetime as dt
+import os.path
+from os import path
 from psaw import PushshiftAPI
 import csv
 
@@ -28,21 +30,25 @@ r = praw.Reddit("sensor1")
 api = PushshiftAPI(r)
 
 #Questions for collection
+name = input("What is the name of the file you want your data to go in?\n")
 sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
-
 n = int(input("What is your limit?\n"))
-date = input("What year would you like to pull from?")
+date = input("What year would you like to pull from?\n")
 
 start_epoch = int(dt.datetime(int(date), 1, 1).timestamp())
 subreddit = r.subreddit(sub)
 
 posts =  list(api.search_submissions(after=start_epoch, subreddit=sub,
                                                                 limit=n))
+new = False
 #CSV file
 header = ['subreddit','submission_id','comment_id','text','date']
-with open('data.csv', 'a') as f:
+if not path.exists(name):
+    new = True
+with open(name, 'a') as f:
     data = csv.writer(f)
-    data.writerow(header)
+    if new:
+        data.writerow(header)
 
     #Loop through posts and put their threads in a csv file
     final = ""
