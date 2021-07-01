@@ -49,7 +49,7 @@ with open(name, 'a') as f:
         f.write(comma.join(header) + "\n")
     else:
         with open(name, 'r') as t:
-            start_epoch = t.readlines()[-1].split(",")[-1]
+            start_epoch = int(t.readlines()[-1].split(",")[-1])
         
     while True:
         posts =  list(api.search_submissions(after=start_epoch,
@@ -64,5 +64,5 @@ with open(name, 'a') as f:
                     write = [sub, top_level_comment.link_id, top_level_comment.id, '"' + words + '"', str(top_level_comment.created_utc)]
                     f.write(comma.join(write) + "\n")
                     f.flush()
-            start_epoch = post.created_utc
+            start_epoch = int(post.created_utc)
     f.close()
