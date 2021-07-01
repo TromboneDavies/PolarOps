@@ -30,6 +30,7 @@ r = praw.Reddit("sensor1")
 api = PushshiftAPI(r)
 comma = ","
 new = False
+batch_num = 0
 
 #Questions for collection
 name = input("What is the name of the file you want your data to go in?\n")
@@ -41,7 +42,7 @@ start_epoch = int(dt.datetime(int(date), 1, 1).timestamp())
 subreddit = r.subreddit(sub)
 
 #CSV file
-header = ['subreddit','submission_id','comment_id','text','date']
+header = ['subreddit','submission_id','comment_id','text','date','batch_num']
 if not path.exists(name):
     new = True
 with open(name, 'a') as f:
@@ -49,10 +50,11 @@ with open(name, 'a') as f:
         f.write(comma.join(header) + "\n")
     else:
         with open(name, 'r') as t:
-            submission = reddit.submission(t.readlines()[-1].split(",")[0])
+            submission = r.submission(t.readlines()[-1].split(",")[0])
             start_epoch = int(submission.created_uct)
         
     while True:
+        batch_num = batch_num + 1
         posts =  list(api.search_submissions(after=start_epoch+1,
                     subreddit=sub, limit=n))
 
@@ -62,7 +64,9 @@ with open(name, 'a') as f:
                 if hasattr(top_level_comment, "body"):
                     words = get_thread(top_level_comment, 0, "").replace('"', "'")
                     words = words.replace("\n", "\\n")
-                    write = [sub, top_level_comment.link_id, top_level_comment.id, '"' + words + '"', str(top_level_comment.created_utc)]
+                    write = [sub, top_level_comment.link_id,
+                    top_level_comment.id, '"' + words + '"',
+                    str(top_level_comment.created_utc), str(batch_num)]
                     f.write(comma.join(write) + "\n")
                     f.flush()
             start_epoch = int(post.created_utc)
