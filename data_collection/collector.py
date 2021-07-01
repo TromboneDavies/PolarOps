@@ -49,11 +49,12 @@ with open(name, 'a') as f:
         f.write(comma.join(header) + "\n")
     else:
         with open(name, 'r') as t:
-            start_epoch = int(t.readlines()[-1].split(",")[-1])
+            submission = reddit.submission(t.readlines()[-1].split(",")[0])
+            start_epoch = int(submission.created_uct)
         
     while True:
-        posts =  list(api.search_submissions(after=start_epoch,
-                    subreddit=sub, limit=20))
+        posts =  list(api.search_submissions(after=start_epoch+1,
+                    subreddit=sub, limit=n))
 
         #Loop through posts and put their threads in a csv file
         for post in posts:
