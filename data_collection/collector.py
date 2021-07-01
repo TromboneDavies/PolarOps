@@ -53,6 +53,7 @@ with open(name, 'a') as f:
             start_epoch = int(submission.created_uct)
         
     while True:
+        print("The start_epoch is: {}".format(start_epoch))
         posts =  list(api.search_submissions(after=start_epoch+1,
                     subreddit=sub, limit=n))
 
