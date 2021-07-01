@@ -51,11 +51,12 @@ with open(name, 'a') as f:
     else:
         with open(name, 'r') as t:
             submission = r.submission(t.readlines()[-1].split(",")[0])
-            start_epoch = int(submission.created_uct)
+            start_epoch = int(submission.created_utc)
         
     while True:
         batch_num = batch_num + 1
-        print("The start_epoch is: {}".format(start_epoch))
+        print("The new start_epoch for the query is: {}".format(start_epoch+1))
+        remember_this = start_epoch
         posts =  list(api.search_submissions(after=start_epoch+1,
                     subreddit=sub, limit=n))
 
@@ -71,4 +72,9 @@ with open(name, 'a') as f:
                     f.write(comma.join(write) + "\n")
                     f.flush()
             start_epoch = int(post.created_utc)
+            if start_epoch > remember_this:
+                print("Yep, carry on...")
+            else:
+                print("WHOA: just read {}, which is earlier than {}!".
+                    format(start_epoch, remember_this))
     f.close()

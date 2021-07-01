@@ -30,7 +30,7 @@ model.add(Activation("relu"))
 model.add(Dense(1))
 model.add(Activation("sigmoid"))
 
-model.compile(optimizer=SGD(lr=.001,momentum=.3), loss="binary_crossentropy")
+model.compile(optimizer=SGD(lr=.001,momentum=.1), loss="binary_crossentropy")
 train_inputs = train[['height','shoes','IQ']].to_numpy()
 train_labels = np.where(train['gender'].to_numpy() == "M", 0.0, 1.0)
 test_inputs = test[['height','shoes','IQ']].to_numpy()
