@@ -6,6 +6,14 @@ import pandas as pd
 from nltk.corpus import movie_reviews
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
+import csv
+
+#Creates a list of lists (which are the individual bot names with /u/)
+with open('botnames.csv',newline='') as f:
+    reader=csv.reader(f)
+    botnames=list(reader)
+#Turning that list of lists into a list of strings
+botnames = [item for sublist in botnames for item in sublist]
 
 # Removes punctuation and capitalization from a string
 def remove_punct(post):
