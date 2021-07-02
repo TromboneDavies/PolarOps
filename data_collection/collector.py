@@ -60,7 +60,7 @@ subreddit = r.subreddit(sub)
 header = ['subreddit','submission_id','comment_id','text','date','batch_num']
 if not path.exists(name):
     new = True
-with open(name, 'a') as f:
+with open(name, 'a', encoding='utf=8') as f:
     if new:
         print("No file named {} yet...we'll create a new one.".format(name))
         year = int(input("What year would you like to pull from?\n")) + 1
@@ -69,7 +69,7 @@ with open(name, 'a') as f:
             makeDateReadable(end_epoch-1)))
         f.write(comma.join(header) + "\n")
     else:
-        with open(name, 'r') as t:
+        with open(name, 'r', encoding='utf=8') as t:
             print("We'll add to {}.".format(name))
             existing_df = pd.read_csv(name)
             end_epoch = int(existing_df.date.min() - 1)
