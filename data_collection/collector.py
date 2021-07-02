@@ -5,7 +5,30 @@ from os import path
 from psaw import PushshiftAPI
 import pandas as pd
 import csv
+import sys
 
+
+# Usage: collector.py filename subreddit batch_size.
+if len(sys.argv) == 4:
+    name = sys.argv[1]
+    sub = sys.argv[2]
+    batch_size = int(sys.argv[3])
+elif len(sys.argv) == 3:
+    name = sys.argv[1]
+    sub = sys.argv[2]
+    batch_size = 100
+elif len(sys.argv) == 2:
+    name = sys.argv[1]
+    sub = name
+    batch_size = 100
+else:
+    #Questions for collection
+    name = input("What is the name of the file you want your data to go in?\n")
+    sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
+    batch_size = int(input("What is your batch size? (max: 100)\n"))
+
+if not name.endswith('.csv'):
+    name += '.csv'
 
 # Note that the makeDateReadable() function only works on a single value, not
 # and entire array/series.
@@ -47,12 +70,6 @@ comma = ","
 new = False
 batch_num = 0
 
-#Questions for collection
-name = input("What is the name of the file you want your data to go in?\n")
-if not name.endswith('.csv'):
-    name += '.csv'
-sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
-batch_size = int(input("What is your batch size? (max: 100)\n"))
 
 subreddit = r.subreddit(sub)
 
