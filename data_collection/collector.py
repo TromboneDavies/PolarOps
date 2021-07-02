@@ -52,7 +52,7 @@ name = input("What is the name of the file you want your data to go in?\n")
 if not name.endswith('.csv'):
     name += '.csv'
 sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
-n = int(input("What is your batch size?\n"))
+batch_size = int(input("What is your batch size? (max: 100)\n"))
 
 subreddit = r.subreddit(sub)
 
@@ -83,7 +83,7 @@ with open(name, 'a') as f:
             makeDateReadable(end_epoch-1,True)))
         remember_this = end_epoch
         posts =  list(api.search_submissions(before=end_epoch-1,
-                    subreddit=sub, limit=n))
+                    subreddit=sub, limit=batch_size))
 
         #Loop through posts and put their threads in a csv file
         for post in posts:
