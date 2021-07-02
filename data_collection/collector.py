@@ -3,7 +3,14 @@ import datetime as dt
 import os.path
 from os import path
 from psaw import PushshiftAPI
+import pandas as pd
 import csv
+
+def makeDateReadable(timestamp, longform=False):
+    if not longform:
+        return dt.datetime.fromtimestamp(timestamp).strftime("%m/%d/%y %I:%M%p")
+    else:
+        return dt.datetime.fromtimestamp(timestamp).strftime("%m/%d/%y %I:%M:%S%p")
 
 #Returns a string of the entire thread of a comment
 def get_thread(top_level_comment, tab, final):
@@ -34,11 +41,11 @@ batch_num = 0
 
 #Questions for collection
 name = input("What is the name of the file you want your data to go in?\n")
+if not name.endswith('.csv'):
+    name += '.csv'
 sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
-n = int(input("What is your limit?\n"))
-date = input("What year would you like to pull from?\n")
+n = int(input("What is your batch size?\n"))
 
-start_epoch = int(dt.datetime(int(date), 1, 1).timestamp())
 subreddit = r.subreddit(sub)
 
 #CSV file
@@ -47,17 +54,27 @@ if not path.exists(name):
     new = True
 with open(name, 'a') as f:
     if new:
+        print("No file named {} yet...we'll create a new one.".format(name))
+        year = int(input("What year would you like to pull from?\n")) + 1
+        end_epoch = int(dt.datetime(int(year), 1, 1).timestamp())
+        print("We'll begin at {} and go backwards....".format(
+            makeDateReadable(end_epoch-1)))
         f.write(comma.join(header) + "\n")
     else:
         with open(name, 'r') as t:
-            submission = r.submission(t.readlines()[-1].split(",")[0])
-            start_epoch = int(submission.created_utc)
+            print("We'll add to {}.".format(name))
+            existing_df = pd.read_csv(name)
+            end_epoch = int(existing_df.date.min() - 1)
+            batch_num = existing_df.batch_num.max()
+            print("We'll resume at {} and go backwards....".format(
+                makeDateReadable(end_epoch-1)))
         
     while True:
         batch_num = batch_num + 1
-        print("The new start_epoch for the query is: {}".format(start_epoch+1))
-        remember_this = start_epoch
-        posts =  list(api.search_submissions(after=start_epoch+1,
+        print("Starting new batch {} at time {}...".format(batch_num,
+            makeDateReadable(end_epoch-1,True)))
+        remember_this = end_epoch
+        posts =  list(api.search_submissions(before=end_epoch-1,
                     subreddit=sub, limit=n))
 
         #Loop through posts and put their threads in a csv file
@@ -71,10 +88,7 @@ with open(name, 'a') as f:
                     str(top_level_comment.created_utc), str(batch_num)]
                     f.write(comma.join(write) + "\n")
                     f.flush()
-            start_epoch = int(post.created_utc)
-            if start_epoch > remember_this:
-                print("Yep, carry on...")
-            else:
-                print("WHOA: just read {}, which is earlier than {}!".
-                    format(start_epoch, remember_this))
+                    print(" {}".format(
+                        makeDateReadable(top_level_comment.created_utc,True)))
+            end_epoch = int(post.created_utc)
     f.close()
