@@ -30,6 +30,11 @@ else:
 if not name.endswith('.csv'):
     name += '.csv'
 
+
+# Load known botnames.
+bots = set(pd.read_csv("botnames.csv", squeeze=True, header=None))
+
+
 # Note that the makeDateReadable() function only works on a single value, not
 # and entire array/series.
 #
@@ -105,7 +110,10 @@ with open(name, 'a', encoding='utf=8') as f:
         #Loop through posts and put their threads in a csv file
         for post in posts:
             for top_level_comment in r.submission(post).comments:
-                if hasattr(top_level_comment, "body"):
+                if str(top_level_comment.author) in bots:
+                    print("  (Discarding thread from known bot {})".format(
+                        top_level_comment.author))
+                elif hasattr(top_level_comment, "body"):
                     words = get_thread(top_level_comment, 0, "").replace('"', "'")
                     words = words.replace("\n", "\\n")
                     write = [sub, top_level_comment.link_id,
