@@ -110,7 +110,8 @@ with open(name, 'a', encoding='utf=8') as f:
         #Loop through posts and put their threads in a csv file
         for post in posts:
             for top_level_comment in r.submission(post).comments:
-                if str(top_level_comment.author) in bots:
+                if (hasattr(top_level_comment,"author") and
+                    str(top_level_comment.author) in bots):
                     print("  (Discarding thread from known bot {})".format(
                         top_level_comment.author))
                 elif hasattr(top_level_comment, "body"):
