@@ -28,8 +28,8 @@ import matplotlib.pyplot as plt
 
 
 
-# The number of most-frequent words to include in analysis.
-NUM_TOP_WORDS = 6000
+# Configurable aspects of the model.
+NUM_TOP_WORDS = 6000  # Number of most common words to retain.
 METHOD = 'binary'
 NUM_EPOCHS = 20
 NUM_NEURONS = 20
