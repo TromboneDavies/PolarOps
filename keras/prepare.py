@@ -1,3 +1,14 @@
+# prepare.py -- Perform basic data cleansing and model creation in preparation
+# for downstream script like validate.py, cross_validate.py, or interactive.py.
+#
+# When this script is finished running, the following variables will be
+# available to downstream scripts:
+#
+# - model
+# - all_threads
+# - yall
+# - vocab
+
 import string
 import re
 from os import listdir
@@ -14,8 +25,7 @@ from collections import Counter
 NUM_TOP_WORDS = 1000
 
 
-# TJ
-# Removes punctuation and capitalization from a string
+# TJ - Removes punctuation and capitalization from a string
 def remove_punct(thread):
     thread = thread.replace("\\n", "")
     thread = thread.replace("\t", "")
@@ -59,7 +69,7 @@ def create_tokenizer(lines):
     tokenizer.fit_on_texts(lines)
     return tokenizer
 
-# orig define the model
+# orig - define the model
 def define_model(numWords):
     # define network
     model = Sequential()
@@ -73,7 +83,7 @@ def define_model(numWords):
     #plot_model(model, to_file='model.png', show_shapes=True)
     return model
 
-# orig/SD classify a thread as polarized or not polarized
+# orig/SD - classify a thread as polarized or not polarized
 def predict_polarized(thread, vocab, tokenizer, model):
     tokens = thread_to_tokens(thread)
     # unneeded?  tokens = [w for w in tokens if w in vocab]
@@ -88,7 +98,7 @@ def predict_polarized(thread, vocab, tokenizer, model):
         return (1-percent_polar), 'no'
     return percent_polar, 'yes'
 
-# SD compute vocabulary
+# SD - compute vocabulary
 def compute_vocab(df):
     vocab = Counter()
     for row in df.itertuples():
@@ -98,41 +108,32 @@ def compute_vocab(df):
 
 
 
-# load the training data
-df = pd.read_csv("../data_collection/training_data.csv")
+# load and shuffle the training data
+df = pd.read_csv("../classifier/training_data.csv")
+df = df.sample(frac=1)
 vocab = compute_vocab(df)
 
 
-## load all threads
-training_set = df.sample(frac=.8)
-test_set = df.drop(training_set.index)
-training_threads, ytrain = load_clean_dataset(training_set, vocab)
-test_threads, ytest = load_clean_dataset(test_set, vocab)
+## load all threads and labels.
+all_threads, yall = load_clean_dataset(df, vocab)
 
-## create the tokenizer
-tokenizer = create_tokenizer(training_threads + test_threads)
+## create the tokenizer, for use in calling .texts_to_matrix().
+tokenizer = create_tokenizer(all_threads)
+
 ## encode data
-Xtrain = tokenizer.texts_to_matrix(training_threads, mode='binary')
-Xtest = tokenizer.texts_to_matrix(test_threads, mode='binary')
+allX = tokenizer.texts_to_matrix(all_threads, mode='binary')
 
 
-
-# define network
-numWords = Xtrain.shape[1]
+# define neural net
+numWords = allX.shape[1]
 model = define_model(numWords)
-# fit network
-model.fit(Xtrain, ytrain, epochs=10, verbose=0)
 
-results = model.predict(Xtest)[:,0].round() == ytest
-print("\nThe model got {}/{} ({:.2f}%) correct.".format(
-    sum(results), len(results), sum(results)/len(results)*100))
-
-# test polarized text
-text = 'I hate you libtards and i will never believe anything you say!'
-percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
-print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
-# test negative text
-text = 'Thats a really good point. I think Im changing my mind.'
-text = "Can't we for once have a bipartisan solution where everybody wins?"
-percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
-print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
+## test polarized text
+#text = 'I hate you libtards and i will never believe anything you say!'
+#percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
+#print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
+## test negative text
+#text = 'Thats a really good point. I think Im changing my mind.'
+#text = "Can't we for once have a bipartisan solution where everybody wins?"
+#percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
+#print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
