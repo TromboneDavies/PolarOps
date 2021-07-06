@@ -4,10 +4,11 @@
 # When this script is finished running, the following variables will be
 # available to downstream scripts:
 #
-# - model
+# - define_model()
 # - all_threads
 # - yall
 # - vocab
+# - numWords
 
 import string
 import re
@@ -126,14 +127,4 @@ allX = tokenizer.texts_to_matrix(all_threads, mode='binary')
 
 # define neural net
 numWords = allX.shape[1]
-model = define_model(numWords)
 
-## test polarized text
-#text = 'I hate you libtards and i will never believe anything you say!'
-#percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
-#print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
-## test negative text
-#text = 'Thats a really good point. I think Im changing my mind.'
-#text = "Can't we for once have a bipartisan solution where everybody wins?"
-#percent, sentiment = predict_polarized(text, vocab, tokenizer, model)
-#print('Review: [%s]\nSentiment: %s (%.3f%%)' % (text, sentiment, percent*100))
