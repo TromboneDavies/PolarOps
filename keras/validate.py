@@ -26,13 +26,26 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from gensim.scripts.glove2word2vec import KeyedVectors
+
 
 
 # Configurable aspects of the model.
-NUM_TOP_WORDS = 6000  # Number of most common words to retain.
-METHOD = 'binary'
+NUM_TOP_WORDS = 3000  # Number of most common words to retain.
+METHOD = 'binary'     # binary, freq, count, or tfidf
 NUM_EPOCHS = 20
 NUM_NEURONS = 20
+EMBEDDINGS = True     # Use word embeddings, or just one-hot words?
+#WORD_EMBEDDINGS_FILE = "Set1_TweetDataWithoutSpam_Word.bin"
+WORD_EMBEDDINGS_FILE = "glove.6B.100d.w2v.txt"
+
+if EMBEDDINGS:
+    print("Loading word embeddings...")
+    binary = False if WORD_EMBEDDINGS_FILE.endswith(".txt") else True
+    wv = KeyedVectors.load_word2vec_format(WORD_EMBEDDINGS_FILE, binary=binary)
+    print("...done.")
+
+
 
 # TJ - Removes punctuation and capitalization from a string
 def remove_punct(thread):
@@ -114,9 +127,26 @@ def compute_vocab(df, numWords):
         vocab.update(thread_to_tokens(row.text))
     return [ w for w,c in vocab.most_common(numWords) 
         if w not in ['newcomment','inthreadquote'] ]
+
+# SD - compute the centroid (Stephen's "dumb idea")
+def embed(threads):
+    ignored = set()
+    mat = np.zeros(shape=(len(threads),wv.vector_size))
+    for i,thread in enumerate(threads):
+        if METHOD == "binary":
+            words = set(thread)
+        elif METHOD in [ "freq", "count" ]:
+            words = thread
+        for word in words:
+            if word in wv and word in vocab:
+                mat[i,:] += wv[word]
+            else:
+                ignored |= {word}
+        if METHOD == "freq":
+            mat[i,:] = mat[i,:] / len(words)
+    print("(Ignoring these non-words: {}.)".format(", ".join(ignored)))
+    return mat
         
-
-
 
 # load and shuffle the training data
 df = pd.read_csv("../classifier/training_data.csv")
@@ -126,16 +156,16 @@ vocab = compute_vocab(df,NUM_TOP_WORDS)
 
 ## load all threads and labels.
 all_threads, yall = load_clean_dataset(df, vocab)
-
-## create the tokenizer, for use in calling .texts_to_matrix().
-tokenizer = create_tokenizer(all_threads)
-
-## encode data
-allX = tokenizer.texts_to_matrix(all_threads, mode=METHOD)
-
-
-# define neural net
+if EMBEDDINGS:
+    allX = embed(all_threads)
+    numWords = allX.shape[1]
+else:
+    # create the tokenizer, for use in calling .texts_to_matrix().
+    tokenizer = create_tokenizer(all_threads)
+    # encode data
+    allX = tokenizer.texts_to_matrix(all_threads, mode=METHOD)
 numWords = allX.shape[1]
+
 
 
 def validate(all_threads, yall, test_size=.2):
@@ -145,8 +175,12 @@ def validate(all_threads, yall, test_size=.2):
         all_threads, yall, test_size=test_size)
 
     # encode separate training and test matrices
-    Xtrain = tokenizer.texts_to_matrix(training_threads, mode=METHOD)
-    Xtest = tokenizer.texts_to_matrix(test_threads, mode=METHOD)
+    if EMBEDDINGS:
+        Xtrain = embed(training_threads)
+        Xtest = embed(test_threads)
+    else:
+        Xtrain = tokenizer.texts_to_matrix(training_threads, mode=METHOD)
+        Xtest = tokenizer.texts_to_matrix(test_threads, mode=METHOD)
 
     model = define_model(numWords)
     histo = model.fit(Xtrain, ytrain, epochs=NUM_EPOCHS, verbose=0)
@@ -168,9 +202,16 @@ def validation_hist(numModels=100,title=""):
     plt.text(x=accuracies.mean()+5,y=.9*ax.get_ylim()[1],
         s="{:.2f}%".format(accuracies.mean()),color="red")
     plt.xlabel("Accuracy (%)")
+    if EMBEDDINGS:
+        def_title = "{} {} words {} {} epochs {} neurons".format(
+            WORD_EMBEDDINGS_FILE[:4], NUM_TOP_WORDS, METHOD, NUM_EPOCHS,
+            NUM_NEURONS)
+    else:
+        def_title = "Raw {} words {} epochs {} neurons".format(
+            NUM_TOP_WORDS, METHOD, NUM_EPOCHS, NUM_NEURONS)
+    title = title if len(title) > 0 else def_title
     plt.title(title)
-    plt.savefig("{}_{}words_{}epochs_{}neurons.png".format(
-        NUM_TOP_WORDS, METHOD, NUM_EPOCHS, NUM_NEURONS))
+    plt.savefig(title.replace(" ","_") + ".png")
     return accuracies
         
 
@@ -181,9 +222,4 @@ def validate_one():
 
 
 
-print(("Validating model using {} top words, {} counting, {} epochs, " +
-    " and {} 'neurons'.").format(NUM_TOP_WORDS, METHOD, NUM_EPOCHS,
-    NUM_NEURONS))
-validation_hist(100,"{} {} words {} epochs {} neurons".format(
-    NUM_TOP_WORDS, METHOD, NUM_EPOCHS, NUM_NEURONS))
-
+validation_hist(100)
