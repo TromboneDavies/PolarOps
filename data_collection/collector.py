@@ -1,4 +1,5 @@
 import praw
+from datetime import datetime
 import datetime as dt
 import os.path
 from os import path
@@ -78,6 +79,11 @@ batch_num = 0
 
 subreddit = r.subreddit(sub)
 
+#Log file - thread's TLC date and instantaneous system date (doesn't check for file existence)
+log_header=['TLC_date','system_date']
+with open('collecting.log', 'a', encoding='utf-8') as l:
+    l.write(comma.join(log_header) + "\n")
+
 #CSV file
 header = ['subreddit','submission_id','comment_id','text','date','batch_num']
 if not path.exists(name):
@@ -121,8 +127,13 @@ with open(name, 'a', encoding='utf=8') as f:
                     top_level_comment.id, '"' + words + '"',
                     str(top_level_comment.created_utc), str(batch_num)]
                     f.write(comma.join(write) + "\n")
+                    #writes to collecting.log TLC date and local time zone date
+                    log_write = [str(top_level_comment.created_utc), datetime.now()]
+                    l.write(comma.join(log_write) + "\n")
                     f.flush()
+                    l.flush()
                     print(" {}".format(
                         makeDateReadable(top_level_comment.created_utc,True)))
             end_epoch = int(post.created_utc)
     f.close()
+    l.close()
