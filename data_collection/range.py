@@ -21,8 +21,6 @@ if not df_name.endswith(".csv"):
 print("df_name = {}".format(df_name))
 
 df = pd.read_csv(df_name)
-print("There are {} entries, from {} to {}.".format(len(df),
-    makeDateReadable(df.date.min()), makeDateReadable(df.date.max())))
 
 dtinfo = df.date.astype('int').astype("datetime64[s]")
 df['year'] = dtinfo.dt.year
@@ -34,3 +32,6 @@ thing = [(y,month_abbr[m]) for y,m in sorted_counts.index]
 sorted_counts.index=pd.MultiIndex.from_tuples(thing)
 with pd.option_context('display.max_rows', None):
     print(sorted_counts)
+
+print("There are a total of {} entries, from {} to {}.".format(len(df),
+    makeDateReadable(df.date.min()), makeDateReadable(df.date.max())))
