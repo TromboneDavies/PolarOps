@@ -6,6 +6,7 @@ from psaw import PushshiftAPI
 import pandas as pd
 import csv
 import sys
+from makeDateReadable import makeDateReadable
 
 
 # Usage: collector.py filename subreddit batch_size.
@@ -35,18 +36,6 @@ if not name.endswith('.csv'):
 bots = set(pd.read_csv("botnames.csv", squeeze=True, header=None))
 
 
-# Note that the makeDateReadable() function only works on a single value, not
-# and entire array/series.
-#
-# A good way to convert the entire date column to something readable is:
-#
-# df.date = df.date.astype('int').astype("datetime64[s]")
-#
-def makeDateReadable(timestamp, longform=False):
-    if not longform:
-        return dt.datetime.fromtimestamp(timestamp).strftime("%m/%d/%y %I:%M%p")
-    else:
-        return dt.datetime.fromtimestamp(timestamp).strftime("%m/%d/%y %I:%M:%S%p")
 
 #Returns a string of the entire thread of a comment
 def get_thread(top_level_comment, tab, final):
