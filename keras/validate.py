@@ -35,16 +35,10 @@ NUM_TOP_WORDS = 3000  # Number of most common words to retain.
 METHOD = 'binary'     # binary, freq, count, or tfidf
 NUM_EPOCHS = 20
 NUM_NEURONS = 20
-EMBEDDINGS = True     # Use word embeddings, or just one-hot words?
+REMOVE_STOPWORDS = False     # Remove stopwords?
+EMBEDDINGS = False           # Use word embeddings, or just one-hot words?
 #WORD_EMBEDDINGS_FILE = "Set1_TweetDataWithoutSpam_Word.bin"
 WORD_EMBEDDINGS_FILE = "glove.6B.100d.w2v.txt"
-
-if EMBEDDINGS:
-    print("Loading word embeddings...")
-    binary = False if WORD_EMBEDDINGS_FILE.endswith(".txt") else True
-    wv = KeyedVectors.load_word2vec_format(WORD_EMBEDDINGS_FILE, binary=binary)
-    print("...done.")
-
 
 
 # TJ - Removes punctuation and capitalization from a string
@@ -56,15 +50,30 @@ def remove_punct(thread):
     punctuation = string.punctuation 
     for element in punctuation:
         thread = thread.replace(element, "")
-        thread = thread.replace("’", "")
-        thread = thread.replace("—", "")
+    thread = thread.replace("’", "")
+    thread = thread.replace("—", "")
     thread = thread.replace("“", "")
     thread = thread.replace("”", "")
     return thread.lower()
 
+
+
+if REMOVE_STOPWORDS:
+    stop = [ remove_punct(sw) for sw in stopwords.words('english') ]
+else:
+    stop = []
+
+if EMBEDDINGS:
+    print("Loading word embeddings...")
+    binary = False if WORD_EMBEDDINGS_FILE.endswith(".txt") else True
+    wv = KeyedVectors.load_word2vec_format(WORD_EMBEDDINGS_FILE, binary=binary)
+    print("...done.")
+
+
+
 # SD
 def tokenize(thread):
-    return thread.split(" ")
+    return [ w for w in thread.split(" ") if w not in stop ]
     
 # orig/SD
 def thread_to_tokens(thread, vocab=None):
@@ -203,12 +212,13 @@ def validation_hist(numModels=100,title=""):
         s="{:.2f}%".format(accuracies.mean()),color="red")
     plt.xlabel("Accuracy (%)")
     if EMBEDDINGS:
-        def_title = "{} {} words {} {} epochs {} neurons".format(
-            WORD_EMBEDDINGS_FILE[:4], NUM_TOP_WORDS, METHOD, NUM_EPOCHS,
-            NUM_NEURONS)
+        def_title = "{} {} words {} {}".format(
+            WORD_EMBEDDINGS_FILE[:4], NUM_TOP_WORDS, METHOD,
+                "removing" if REMOVE_STOPWORDS else "keeping")
     else:
-        def_title = "Raw {} words {} epochs {} neurons".format(
-            NUM_TOP_WORDS, METHOD, NUM_EPOCHS, NUM_NEURONS)
+        def_title = "Raw {} words {} {}".format(
+            NUM_TOP_WORDS, METHOD,
+                "removing" if REMOVE_STOPWORDS else "keeping")
     title = title if len(title) > 0 else def_title
     plt.title(title)
     plt.savefig(title.replace(" ","_") + ".png")
