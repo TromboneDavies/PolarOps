@@ -128,7 +128,7 @@ with open(name, 'a', encoding='utf=8') as f:
                     str(top_level_comment.created_utc), str(batch_num)]
                     f.write(comma.join(write) + "\n")
                     #writes to collecting.log TLC date and local time zone date
-                    log_write = [str(top_level_comment.created_utc), datetime.now()]
+                    log_write = [str(top_level_comment.created_utc), str(datetime.now())]
                     l.write(comma.join(log_write) + "\n")
                     f.flush()
                     l.flush()
