@@ -31,7 +31,7 @@ import tensorflow.compat.v1.logging
 
 ############################################################################
 
-NUM_MODELS = 10    # Number of random models to generate for each batch of
+NUM_MODELS = 100    # Number of random models to generate for each batch of
                     # configuration settings.
 TRAINING_FRAC = .8  # Fraction of rows to use as training data in each model.
 
