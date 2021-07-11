@@ -18,8 +18,6 @@ else:
 if not df_name.endswith(".csv"):
     df_name = df_name + ".csv"
 
-print("df_name = {}".format(df_name))
-
 df = pd.read_csv(df_name).dropna()
 
 dtinfo = df.date.astype(int).astype("datetime64[s]")
