@@ -20,11 +20,11 @@ if not df_name.endswith(".csv"):
 
 print("df_name = {}".format(df_name))
 
-df = pd.read_csv(df_name)
+df = pd.read_csv(df_name).dropna()
 
-dtinfo = df.date.astype('int').astype("datetime64[s]")
-df['year'] = dtinfo.dt.year
-df['month_num'] = dtinfo.dt.month
+dtinfo = df.date.astype(int).astype("datetime64[s]")
+df['year'] = dtinfo.dt.year.astype(int)
+df['month_num'] = dtinfo.dt.month.astype(int)
 
 counts = df.groupby(['year','month_num']).comment_id.count()
 sorted_counts = counts.sort_index(ascending=False)
