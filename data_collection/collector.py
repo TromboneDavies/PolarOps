@@ -70,8 +70,8 @@ subreddit = r.subreddit(sub)
 
 #Log file - thread's TLC date and instantaneous system date (doesn't check for file existence)
 log_header=['TLC_date','system_date']
-with open('collecting.log', 'a', encoding='utf-8') as l:
-    l.write(comma.join(log_header) + "\n")
+l = open('collecting.log', 'a', encoding='utf-8')
+l.write(comma.join(log_header) + "\n")
 
 #CSV file
 header = ['subreddit','submission_id','comment_id','text','date','batch_num']
