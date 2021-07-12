@@ -7,35 +7,61 @@ from psaw import PushshiftAPI
 import pandas as pd
 import csv
 import sys
-from makeDateReadable import makeDateReadable
+from datestuff import makeDateReadable, calculatePrevMonth
 
+header = ['subreddit','submission_id','comment_id','text','date','batch_num']
 
-# Usage: collector.py filename subreddit batch_size.
-if len(sys.argv) == 4:
+THREADS_PER_MONTH = 300
+
+# To create a new .py file, run with four arguments:
+#     collector.py filename subreddit month_num year
+# To continue filling an existing .py file, run with one argument:
+#     collector.py filename
+
+if len(sys.argv) == 5:
+    # Create brand new .csv file.
     name = sys.argv[1]
+    if not name.endswith('.csv'):
+        name += '.csv'
+    if path.exists(name):
+        sys.exit("Whoops!! Already have a {}.".format(name))
     sub = sys.argv[2]
-    batch_size = int(sys.argv[3])
-elif len(sys.argv) == 3:
-    name = sys.argv[1]
-    sub = sys.argv[2]
-    batch_size = 100
+    month_num = int(sys.argv[3])
+    year = int(sys.argv[4])
+    next_date_pull = dt.datetime(year=year, month=month_num, day=1)
+    with open(name, 'a', encoding='utf-8') as f:
+        f.write(",".join(header) + "\n")
+    batch_num = 0
+
 elif len(sys.argv) == 2:
+    # Continue with existing .csv file.
     name = sys.argv[1]
-    sub = name
-    batch_size = 100
+    if not name.endswith('.csv'):
+        name += '.csv'
+    if not path.exists(name):
+        sys.exit("Whoops!! Don't have a {}.".format(name))
+    temp = pd.read_csv(name,encoding="utf-8")
+    sub = temp.iloc[0].subreddit
+    print("Continuing to read from {}...".format(sub))
+    next_date_pull = calculatePrevMonth(int(temp.date.min()-1))
+    batch_num = temp.batch_num.max()
+
 else:
-    #Questions for collection
-    name = input("What is the name of the file you want your data to go in?\n")
-    sub = input("What is the name of the subreddit you are collecting (all lower case)?\n")
-    batch_size = int(input("What is your batch size? (max: 100)\n"))
+    sys.exit(
+        '''
 
-if not name.endswith('.csv'):
-    name += '.csv'
+        Welcome to collector.py.
 
+        To create a new .py file, run with four arguments:
+            collector.py filename subreddit month_num year
+        To continue filling an existing .py file, run with one argument:
+            collector.py filename
+        ''')
+
+BATCH_SIZE = 100
 
 # Load known botnames.
 bots = set(pd.read_csv("botnames.csv", squeeze=True, header=None))
-
 
 
 #Returns a string of the entire thread of a comment
@@ -61,9 +87,6 @@ def get_thread(top_level_comment, tab, final):
 
 r = praw.Reddit("sensor1")
 api = PushshiftAPI(r)
-comma = ","
-new = False
-batch_num = 0
 
 
 subreddit = r.subreddit(sub)
@@ -71,40 +94,23 @@ subreddit = r.subreddit(sub)
 #Log file - thread's TLC date and instantaneous system date (doesn't check for file existence)
 log_header=['TLC_date','system_date']
 l = open('collecting.log', 'a', encoding='utf-8')
-l.write(comma.join(log_header) + "\n")
+l.write(",".join(log_header) + "\n")
 
-#CSV file
-header = ['subreddit','submission_id','comment_id','text','date','batch_num']
-if not path.exists(name):
-    new = True
-with open(name, 'a', encoding='utf=8') as f:
-    if new:
-        print("No file named {} yet...we'll create a new one.".format(name))
-        year = int(input("What year would you like to pull from?\n")) + 1
-        end_epoch = int(dt.datetime(int(year), 1, 1).timestamp())
-        print("We'll begin at {} and go backwards....".format(
-            makeDateReadable(end_epoch-1)))
-        f.write(comma.join(header) + "\n")
-    else:
-        with open(name, 'r', encoding='utf=8') as t:
-            print("We'll add to {}.".format(name))
-            existing_df = pd.read_csv(name)
-            end_epoch = int(existing_df.date.min() - 1)
-            batch_num = existing_df.batch_num.max()
-            print("We'll resume at {} and go backwards....".format(
-                makeDateReadable(end_epoch-1)))
-        
+
+with open(name, 'a', encoding='utf-8') as f:
+
     while True:
         batch_num = batch_num + 1
+        threads_this_month = 0
         print("Starting new batch {} at time {}...".format(batch_num,
-            makeDateReadable(end_epoch-1,True)))
-        remember_this = end_epoch
-        posts =  list(api.search_submissions(before=end_epoch-1,
-                    subreddit=sub, limit=batch_size))
+            makeDateReadable(next_date_pull,True)))
+        posts = list(api.search_submissions(before=next_date_pull,
+                    subreddit=sub, limit=BATCH_SIZE))
 
         #Loop through posts and put their threads in a csv file
         for post in posts:
             for top_level_comment in r.submission(post).comments:
+                threads_this_month += 1
                 if (hasattr(top_level_comment,"author") and
                     str(top_level_comment.author) in bots):
                     print("  (Discarding thread from known bot {})".format(
@@ -115,14 +121,18 @@ with open(name, 'a', encoding='utf=8') as f:
                     write = [sub, top_level_comment.link_id,
                     top_level_comment.id, '"' + words + '"',
                     str(top_level_comment.created_utc), str(batch_num)]
-                    f.write(comma.join(write) + "\n")
+                    f.write(",".join(write) + "\n")
                     #writes to collecting.log TLC date and local time zone date
                     log_write = [str(top_level_comment.created_utc), str(datetime.now())]
-                    l.write(comma.join(log_write) + "\n")
+                    l.write(",".join(log_write) + "\n")
                     f.flush()
                     l.flush()
                     print(" {}".format(
                         makeDateReadable(top_level_comment.created_utc,True)))
-            end_epoch = int(post.created_utc)
+        if threads_this_month >= THREADS_PER_MONTH:
+            next_date_pull = calculatePrevMonth(post.created_utc)
+            threads_this_month = 0
+        else:
+            next_date_pull = int(post.created_utc-1)
     f.close()
     l.close()
