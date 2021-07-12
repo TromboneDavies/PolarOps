@@ -81,41 +81,19 @@ all_words = nltk.FreqDist(w.lower() for w in words)
 word_features = [word[0] for word in all_words.most_common()[:300]]
 featuresets = [(document_features(d), c) for (d,c) in documents]
 
-size = int(input("What n-fold cross validation would you like to use?\n"))
-
-# Train and tests a Naive Bayes classifier using n-fold cross validation
-curr = 0
-count = 0
-temp = 0
-while curr < len(featuresets):
-    train_set = []
-    test_set = []
-    count = count + 1
-    for i in range(len(featuresets)):
-        if i in range(curr, curr + size):
-            test_set.append(featuresets[i])
-        else:
-            train_set.append(featuresets[i])
-    classifier = nltk.NaiveBayesClassifier.train(train_set)
-    temp = temp + nltk.classify.accuracy(classifier, test_set)
-    classifier.show_most_informative_features(10)
-    curr = curr + size
-
-print(str.format("Average accuracy after {} trials: {}", count, temp/count))
+classifier = nltk.NaiveBayesClassifier.train(featuresets)
+#Classifier trained on 100% of the training_data.csv
 
 
+# Attempting to classify congress.csv
 
-
-# Attempting to classify congress.csv, everything above is copied from classifier.py
-
-# Opens a file and reads in all the posts
+# Opens a Congress file and reads in all the posts
 congress = "congress.csv"
 posts = pd.read_csv(congress, delimiter = ",")
 
-# Initialize variables for future use
+# Re-Initialize variables for future use
 words = []
 documents = []
-stemmer = nltk.PorterStemmer()
 
 # Iterate through dataframe's rows
 for index in posts.index:
@@ -134,13 +112,30 @@ all_words = nltk.FreqDist(w.lower() for w in words)
 word_features = [word[0] for word in all_words.most_common()[:300]]
 featuresets = [document_features(d) for d in documents] 
 
+#Getting the dataframe with the year for graph purposes
+cdf=pd.read_csv(congress)
+dtinfo = cdf.date.astype(int).astype("datetime64[s]")
+cdf['year'] = dtinfo.dt.year.astype(int) 
+
+#Classifying the threads and adding them to the dataframe
 classifier_labels = classifier.classify_many(featuresets)
-
-cdf=pd.read_csv("congress.csv")
 cdf['class_labels'] = classifier_labels
-cdf.class_labels.value_counts()
 
-#And none of these work for label probability for bootstrap
+#Contingency table to make graph
+year_label_m=pd.crosstab(cdf.year,cdf.class_labels,margins=True)
+ylm_r=year_label_m.div(year_label_m['All'],axis=0)*100
+
+
+
+
+
+
+
+
+
+
+#And none of these work for label probability for bootstrap(ignore below)
+
 # prob_dict = classifier.prob_classify_many(featuresets) 
 # for label in prob_dict:
 #     print(label)
@@ -148,4 +143,3 @@ cdf.class_labels.value_counts()
 # dist = classifier.prob_classify_many(featuresets)
 # for label in dist.samples():
 #     print("%s: %f" % (label, dist.prob(label)))
-
