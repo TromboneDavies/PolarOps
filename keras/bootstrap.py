@@ -67,9 +67,6 @@ maxDf = .9
 
 
 
-# Suppress annoying (and red herring, apparently) warning message from TF.
-tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
-
 # load and shuffle the hand-tagged training data
 ht = pd.read_csv("../classifier/training_data.csv")
 ht = ht.sample(frac=1)
