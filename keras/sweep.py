@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import datetime as dt
-from polarops import create_model, create_tokenizer
+from polarops import create_model, create_vectorizer
 
 
 # To run, set the ALL_CAPS variables below. The first two should be single
@@ -23,7 +23,7 @@ from polarops import create_model, create_tokenizer
 # (2) The "results" DataFrame will contain the average accuracy for each of
 # these settings.
 # (3) The results DataFrame will also be written to disk, in a .csv file whose
-# name begins with "results_" and which has a date/time stamp following that.
+# name begins with "results_" and which has a date stamp following that.
 
 ############################################################################
 
@@ -33,10 +33,10 @@ TRAINING_FRAC = .8  # Fraction of rows to use as training data in each model.
 
 
 # int: number of most common words/bigrams to retain
-NUM_TOP_FEATURESES = [ 5000 ]
+NUM_TOP_FEATURESES = [ 100 ]
 
 # str: binary, freq, count, or tfidf
-METHODS = [ 'count' ]
+METHODS = [ 'count', 'binary' ]
 
 # int: number of "neurons" in our only layer
 NUM_NEURONSES = [ 20 ]
@@ -45,13 +45,13 @@ NUM_NEURONSES = [ 20 ]
 NUM_EPOCHSES = [ 20 ]
 
 # bool: remove stopwords, or leave them? (see "note" below)
-REMOVE_STOPWORDSES = [ True, False ]
+REMOVE_STOPWORDSES = [ True ]
 
 # bool: use bigrams, or just unigrams?
 USE_BIGRAMSES = [ True, False ]
 
 # float: ignore unigrams/bigrams with document frequency higher than this
-MAX_DFS = [ .9 ]
+MAX_DFS = [ .5,.95 ]
 
 ############################################################################
 
@@ -78,15 +78,15 @@ def evaluate_settings(
     useBigrams,         # bool: use bigrams, or just unigrams?
     maxDf):             # float: ignore items above this document frequency
 
-    tokenizer = create_tokenizer(all_threads, numTopFeatures, method,
+    vectorizer = create_vectorizer(numTopFeatures, method,
         removeStopwords, useBigrams, maxDf)
-    all_tokenized = tokenizer.fit_transform(all_threads).toarray()
+    all_vectorized = vectorizer.fit_transform(all_threads).toarray()
 
     accuracies = np.empty(NUM_MODELS)
 
     for i in range(NUM_MODELS):
         print("Training model {}/{}...".format(i+1,NUM_MODELS))
-        results = validate(all_tokenized, yall)
+        results = validate(all_vectorized, yall)
         accuracies[i] = sum(results)/len(results)*100
     plt.figure()
     pd.Series(accuracies).hist(density=True, bins=range(0,100,4))
@@ -105,16 +105,16 @@ def evaluate_settings(
 
 
 
-def validate(all_tokenized, yall, numNeurons=20, numEpochs=20):
+def validate(all_vectorized, yall, numNeurons=20, numEpochs=20):
 
     # split into training and test set
-    training_tthreads, test_tthreads, ytrain, ytest = train_test_split(
-        all_tokenized, yall, test_size=(1-TRAINING_FRAC))
+    training_vthreads, test_vthreads, ytrain, ytest = train_test_split(
+        all_vectorized, yall, test_size=(1-TRAINING_FRAC))
 
-    model = create_model(all_tokenized.shape[1], numNeurons)
-    histo = model.fit(training_tthreads, ytrain, epochs=numEpochs, verbose=0)
+    model = create_model(all_vectorized.shape[1], numNeurons)
+    histo = model.fit(training_vthreads, ytrain, epochs=numEpochs, verbose=0)
 
-    return model.predict(test_tthreads)[:,0].round() == ytest
+    return model.predict(test_vthreads)[:,0].round() == ytest
 
 
 numTopFeaturesColumn = np.array([],dtype=int)
@@ -187,6 +187,6 @@ results = pd.DataFrame({
     'avgAccuracy':avgAccColumn})
 
 results.to_csv("results_{}.csv".format(
-    str(dt.datetime.now()).replace(" ","_")),
+    str(dt.date.today()).replace(" ","_")),
         index=False, encoding="utf-8")
 

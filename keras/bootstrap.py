@@ -18,7 +18,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 import datetime as dt
 import tensorflow.compat.v1.logging
-from polarops import create_model, create_tokenizer
+from polarops import create_model, create_vectorizer
 import sys
 
 
@@ -40,7 +40,7 @@ if not BOOTSTRAP_DATA_FILE.endswith('.csv'):
 # non-polarized. If its prediction is > max_bound, we consider it safely
 # polarized. Otherwise, we consider it unreliable and won't use it.
 min_bound = .1
-max_bound = .9
+max_bound = .95
 
 # int: number of most common words/bigrams to retain
 numTopFeatures = 5000
@@ -82,17 +82,21 @@ handTaggedLabels = np.where(ht.polarized=="yes",1,0)
 bootstrap = pd.read_csv(BOOTSTRAP_DATA_FILE)
 bootstrapThreads = bootstrap.text
 
+allThreads = np.append(handTaggedThreads,bootstrapThreads)
 
-tokenizer = create_tokenizer(handTaggedThreads, numTopFeatures, method,
+vectorizer = create_vectorizer(numTopFeatures, method,
     removeStopwords, useBigrams, maxDf)
-handTaggedTokenized = tokenizer.fit_transform(handTaggedThreads).toarray()
-bootstrapTokenized = tokenizer.fit_transform(bootstrapThreads).toarray()
+allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
-model = create_model(handTaggedTokenized.shape[1], numNeurons)
-histo = model.fit(handTaggedTokenized, handTaggedLabels, epochs=numEpochs,
-    verbose=0)
+# Create a "blank" neural net with the right number of dimensions.
+model = create_model(allVectorized.shape[1], numNeurons)
 
-bootstrap['prediction'] = model.predict(bootstrapTokenized)[:,0]
+# Train the neural net for numEpochs epochs on the training data.
+histo = model.fit(allVectorized[0:len(handTaggedThreads),:],
+    handTaggedLabels, epochs=numEpochs, verbose=0)
+
+bootstrap['prediction'] = model.predict(
+    allVectorized[len(handTaggedThreads):,:])[:,0]
 
 safelyNonpolarized = bootstrap[bootstrap.prediction < min_bound]
 safelyPolarized = bootstrap[bootstrap.prediction > max_bound]

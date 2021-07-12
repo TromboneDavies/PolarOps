@@ -10,11 +10,18 @@ import tensorflow.compat.v1.logging
 tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
 
-def create_tokenizer(lines, numTopFeatures, method, removeStopwords, 
-    useBigrams, maxDf):
+# lines: a list/Series of strings, each of which represents a thread.
+# numTopFeatures: the number of most commonly occurring words/bigrams
+#   which we are using in the clasifier.
+# method: "binary", "count", "tfidf"
+# removeStopWords: should we remove them (but see note below)
+# useBigrams: if True, use both bigrams and unigrams. If False, unigrams only.
+# maxDf: ignore unigrams/bigrams with document frequency higher than this
+def create_vectorizer(numTopFeatures, method, removeStopwords, useBigrams,
+    maxDf):
 
     if method == "tfidf":
-        tokenizer = TfidfVectorizer(
+        vectorizer = TfidfVectorizer(
             lowercase=True,
             # note: default stopword list evidently has disadvantages
             stop_words = 'english' if removeStopwords else None,  
@@ -25,7 +32,7 @@ def create_tokenizer(lines, numTopFeatures, method, removeStopwords,
             binary=False,   # experiment?
             ngram_range=(1,2 if useBigrams else 1))
     else:
-        tokenizer = CountVectorizer(
+        vectorizer = CountVectorizer(
             lowercase=True,
             # note: default stopword list evidently has disadvantages
             stop_words = 'english' if removeStopwords else None,  
@@ -35,13 +42,11 @@ def create_tokenizer(lines, numTopFeatures, method, removeStopwords,
             max_features=numTopFeatures,
             binary=(method=='binary'),
             ngram_range=(1,2 if useBigrams else 1))
-    tokenizer.fit_transform(lines)
-    return tokenizer
+    return vectorizer
 
 
-# define the model
+# create an "empty" neural net of the right dimensions.
 def create_model(numWords, numNeurons):
-    # define network
     model = Sequential()
     model.add(Dense(numNeurons, input_shape=(numWords,), activation='relu'))
     model.add(Dense(1, activation='sigmoid'))
