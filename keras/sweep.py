@@ -5,13 +5,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import string
-from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
-from keras.models import Sequential
-from keras.layers import Dense
 import datetime as dt
-import tensorflow.compat.v1.logging
+from polarops import create_model, create_tokenizer
 
 
 # To run, set the ALL_CAPS variables below. The first two should be single
@@ -31,16 +27,16 @@ import tensorflow.compat.v1.logging
 
 ############################################################################
 
-NUM_MODELS = 100    # Number of random models to generate for each batch of
+NUM_MODELS = 10    # Number of random models to generate for each batch of
                     # configuration settings.
 TRAINING_FRAC = .8  # Fraction of rows to use as training data in each model.
 
 
 # int: number of most common words/bigrams to retain
-NUM_TOP_FEATURESES = [ 1000, 3000, 5000, 10000 ]
+NUM_TOP_FEATURESES = [ 5000 ]
 
 # str: binary, freq, count, or tfidf
-METHODS = [ 'binary' ]
+METHODS = [ 'count' ]
 
 # int: number of "neurons" in our only layer
 NUM_NEURONSES = [ 20 ]
@@ -60,9 +56,6 @@ MAX_DFS = [ .9 ]
 ############################################################################
 
 
-
-# Suppress annoying (and red herring, apparently) warning message from TF.
-tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 
 # load and shuffle the training data
 df = pd.read_csv("../classifier/training_data.csv")
@@ -86,7 +79,7 @@ def evaluate_settings(
     maxDf):             # float: ignore items above this document frequency
 
     tokenizer = create_tokenizer(all_threads, numTopFeatures, method,
-        removeStopwords, maxDf)
+        removeStopwords, useBigrams, maxDf)
     all_tokenized = tokenizer.fit_transform(all_threads).toarray()
 
     accuracies = np.empty(NUM_MODELS)
@@ -110,44 +103,6 @@ def evaluate_settings(
     plt.savefig(title.replace(" ","_") + ".png")
     return accuracies
 
-
-def create_tokenizer(lines, numTopFeatures, method, removeStopwords, maxDf):
-
-    if method == "tfidf":
-        tokenizer = TfidfVectorizer(
-            lowercase=True,
-            # note: default stopword list evidently has disadvantages
-            stop_words = 'english' if removeStopwords else None,  
-            token_pattern=r"(?u)\b\w\w+\b",
-            analyzer="word",
-            max_df=maxDf,
-            max_features=numTopFeatures,
-            binary=False,   # experiment?
-            ngram_range=(1,2 if useBigrams else 1))
-    else:
-        tokenizer = CountVectorizer(
-            lowercase=True,
-            # note: default stopword list evidently has disadvantages
-            stop_words = 'english' if removeStopwords else None,  
-            token_pattern=r"(?u)\b\w\w+\b",
-            analyzer="word",
-            max_df=maxDf,
-            max_features=numTopFeatures,
-            binary=(method=='binary'),
-            ngram_range=(1,2 if useBigrams else 1))
-    tokenizer.fit_transform(lines)
-    return tokenizer
-
-
-# define the model
-def create_model(numWords, numNeurons):
-    # define network
-    model = Sequential()
-    model.add(Dense(numNeurons, input_shape=(numWords,), activation='relu'))
-    model.add(Dense(1, activation='sigmoid'))
-    model.compile(loss='binary_crossentropy', optimizer='adam',
-        metrics=['accuracy'])
-    return model
 
 
 def validate(all_tokenized, yall, numNeurons=20, numEpochs=20):
