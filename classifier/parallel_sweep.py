@@ -59,13 +59,13 @@ MAX_DFS = [ .95 ]
 
 ############################################################################
 
-#if os.path.exists(OUTPUT_CSV_FILE):
-#    sys.exit("{} already exists! Will not overwrite.".format(OUTPUT_CSV_FILE))
-#else:
-with open(OUTPUT_CSV_FILE, "w", encoding="utf-8") as f:
-    print("numTopFeatures,method,numNeurons,numEpochs,removeStopwords,useBigrams,maxDfs,avgAccuracy",file=f)
-    f.flush()
-    f.close()
+if os.path.exists(OUTPUT_CSV_FILE):
+    sys.exit("{} already exists! Will not overwrite.".format(OUTPUT_CSV_FILE))
+else:
+    with open(OUTPUT_CSV_FILE, "w", encoding="utf-8") as f:
+        print("numTopFeatures,method,numNeurons,numEpochs,removeStopwords,useBigrams,maxDfs,avgAccuracy",file=f)
+        f.flush()
+        f.close()
 
 
 # load and shuffle the training data
