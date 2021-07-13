@@ -18,12 +18,10 @@ from keras.utils.vis_utils import plot_model
 from keras.models import Sequential
 from keras.layers import Dense
 from collections import Counter
-from gensim.parsing.preprocessing import remove_stopwords
-import csv
 
 
 
-file_name = "training_data.csv"
+file_name = "hand_tagged_data.csv"
 posts = pd.read_csv(file_name, delimiter = ",")
 
 # load doc into memory
@@ -36,11 +34,7 @@ def load_doc(filename):
 	file.close()
 	return text
 
-# Removes punctuation and capitalization from a string
 def remove_punct(post):
-    post = post.replace("\\n", "")
-    post = post.replace(">>", " inthreadquote newcomment ")
-    post = post.replace(">", " newcomment ")
     punctuation = string.punctuation 
     for element in punctuation:
         post = post.replace(element, "")
@@ -68,7 +62,6 @@ posts['clean text']= posts['no sw']
 
 
 token_list=posts['clean text'].tolist()
-a=[ ' '.join(item) for item in token_list]
 # save list to file
 def save_list(lines, filename):
 	# convert lines to a single blob of text
@@ -92,20 +85,16 @@ print(len(tokens))
 # save tokens to a vocabulary file
 save_list(tokens, 'vocab.txt')
 polarized= posts.loc[posts['polarized']=='yes']
-polarized=polarized['clean text']
-polarized=[ ' '.join(item) for item in polarized]
 notpolarized= posts.loc[posts['polarized']=='no']
-notpolarized= notpolarized['clean text']
-notpolarized= [ ' '.join(item) for item in notpolarized]
 # load and clean a dataset
 def load_clean_dataset(vocab, is_train):
 	# load documents
-    npol = (notpolarized, vocab, is_train)
-    pol = (polarized, vocab, is_train)
-    docs = npol + pol
+	npol = (notpolarized['clean text'].tolist(), vocab, is_train)
+	pol = (polarized['clean text'].tolist(), vocab, is_train)
+	docs = npol + pol
 	# prepare labels
-    labels = array([0 for _ in range(len(npol))] + [1 for _ in range(len(pol))])
-    return docs, labels
+	labels = array([0 for _ in range(len(npol))] + [1 for _ in range(len(pol))])
+	return docs, labels
 
 
 
@@ -123,14 +112,15 @@ vocab = load_doc(vocab_filename)
 vocab = set(vocab.split())
 # load all reviews
 
-train_docs, ytrain = load_clean_dataset(vocab, True)
-test_docs, ytest = load_clean_dataset(vocab, False)
-# # create the tokenizer
-# tokenizer = create_tokenizer(train_docs)
+#train_docs, ytrain = load_clean_dataset(vocab, True)
+#test_docs, ytest = load_clean_dataset(vocab, False)
+# create the tokenizer
+#tokenizer = create_tokenizer(train_docs)
 # # encode data
 # Xtrain = tokenizer.texts_to_matrix(train_docs, mode='freq')
 # Xtest = tokenizer.texts_to_matrix(test_docs, mode='freq')
 # print(Xtrain.shape, Xtest.shape)
+
 
 
 
