@@ -88,7 +88,6 @@ vectorizer = create_vectorizer(numTopFeatures, method,
 allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
 def get_features(currFeatures, threads):
-    document_words = set(document)
     features = {}
     temp = 0
     links = 0
@@ -109,11 +108,13 @@ def get_features(currFeatures, threads):
             else:
                 temp = temp + len(word)
             
-        listToAdd.append([temp/len(document), num_comments, links/num_comments,
-            num_in_thread_quotes/num_comments])
+        listToAdd.append([temp/len(ready_thread), num_comments,
+            links/num_comments, num_in_thread_quotes/num_comments])
 
-    features = np.append(currFeatures, listToAdd)
+    features = np.concatenate((currFeatures, np.array(listToAdd)), axis=1)
     return features
+
+allVectorized = get_features(allVectorized, allThreads)
 
 # Create a "blank" neural net with the right number of dimensions.
 model = create_model(allVectorized.shape[1], numNeurons)
