@@ -11,6 +11,7 @@ from datestuff import makeDateReadable, calculatePrevMonth
 
 header = ['subreddit','submission_id','comment_id','text','date','batch_num']
 
+# Make this number (way) higher if you don't want it to "be monthly."
 THREADS_PER_MONTH = 300
 
 # To create a new .py file, run with four arguments:
