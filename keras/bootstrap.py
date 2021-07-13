@@ -85,6 +85,34 @@ vectorizer = create_vectorizer(numTopFeatures, method,
     removeStopwords, useBigrams, maxDf)
 allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
+def get_features(currFeatures, threads):
+    document_words = set(document)
+    features = {}
+    temp = 0
+    links = 0
+    num_comments = 0
+    num_in_thread_quotes = 0
+
+    listToAdd = []
+
+    for thread in threads:
+        ready_thread = remove_punct(thread)
+        for word in ready_thread.split(" "):
+            if "newcom" in word:
+                num_comments = num_comments + 1
+            elif "inthreadquot" in word:
+                num_in_thread_quotes = num_in_thread_quotes + 1
+            elif "http" in word:
+                links = links + 1
+            else:
+                temp = temp + len(word)
+            
+        listToAdd.append([temp/len(document), num_comments, links/num_comments,
+            num_in_thread_quotes/num_comments])
+
+    features = np.append(currFeatures, listToAdd)
+    return features
+
 # Create a "blank" neural net with the right number of dimensions.
 model = create_model(allVectorized.shape[1], numNeurons)
 
