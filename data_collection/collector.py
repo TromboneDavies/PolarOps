@@ -100,9 +100,10 @@ l.write(",".join(log_header) + "\n")
 
 with open(name, 'a', encoding='utf-8') as f:
 
+    threads_this_month = 0
+
     while True:
         batch_num = batch_num + 1
-        threads_this_month = 0
         print("Starting new batch {} at time {}...".format(batch_num,
             makeDateReadable(next_date_pull,True)))
         posts = list(api.search_submissions(before=next_date_pull,
