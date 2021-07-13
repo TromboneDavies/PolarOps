@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import scipy.stats
 import seaborn as sns
 import sys
-from makeDateReadable import makeDateReadable
+from datestuff import makeDateReadable
 from calendar import month_abbr
 
 if len(sys.argv) == 1:
