@@ -58,7 +58,7 @@ MAX_DFS = [ .5,.95 ]
 
 
 # load and shuffle the training data
-df = pd.read_csv("../classifier/training_data.csv")
+df = pd.read_csv("hand_tagged_data.csv")
 df = df.sample(frac=1)
 
 ## load all threads and labels.

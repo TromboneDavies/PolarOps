@@ -11,14 +11,13 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
-import string
 from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from sklearn.model_selection import train_test_split
 from keras.models import Sequential
 from keras.layers import Dense
 import datetime as dt
 import tensorflow.compat.v1.logging
-from polarops import create_model, create_vectorizer
+from polarops import create_model, create_vectorizer, remove_punct
 import sys
 
 
@@ -28,12 +27,15 @@ import sys
 if len(sys.argv) == 2:
     BOOTSTRAP_DATA_FILE = sys.argv[1]
 else:
-    BOOTSTRAP_DATA_FILE = input("What is the path to the unlabeled .csv file" +
-        " with the data you want to bootstrap? (Hint: probably" +
-        " ../data_collection/something.csv")
+    BOOTSTRAP_DATA_FILE = input("What is the name of the unlabeled .csv file" +
+        " (from the data_collection directory, of course) with the data you" +
+        " want to bootstrap?\n")
 
 if not BOOTSTRAP_DATA_FILE.endswith('.csv'):
     BOOTSTRAP_DATA_FILE += '.csv'
+if not BOOTSTRAP_DATA_FILE.startswith('../data_collection/'):
+    BOOTSTRAP_DATA_FILE = "../data_collection/" + BOOTSTRAP_DATA_FILE
+
 
 # The prediction thresholds beyond which we will consider a bootstrapped sample
 # to be "safe" to use. If its prediction is < min_bound, we consider it safely
@@ -68,7 +70,7 @@ maxDf = .9
 
 
 # load and shuffle the hand-tagged training data
-ht = pd.read_csv("../classifier/training_data.csv")
+ht = pd.read_csv("hand_tagged_data.csv")
 ht = ht.sample(frac=1)
 
 ## load all hand-tagged threads and labels.

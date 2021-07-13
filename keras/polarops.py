@@ -4,6 +4,7 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras.models import Sequential
 from keras.layers import Dense
 import tensorflow.compat.v1.logging
+import string
 
 
 # Suppress annoying (and red herring, apparently) warning message from TF.
@@ -53,3 +54,19 @@ def create_model(numWords, numNeurons):
     model.compile(loss='binary_crossentropy', optimizer='adam',
         metrics=['accuracy'])
     return model
+
+
+# TJ - Removes punctuation and capitalization from a string
+def remove_punct(thread):
+    thread = thread.replace("\\n", "")
+    thread = thread.replace("\t", "")
+    thread = thread.replace(">>", " inthreadquote newcomment ")
+    thread = thread.replace(">", " newcomment ")
+    punctuation = string.punctuation 
+    for element in punctuation:
+        thread = thread.replace(element, "")
+    thread = thread.replace("’", "")
+    thread = thread.replace("—", "")
+    thread = thread.replace("“", "")
+    thread = thread.replace("”", "")
+    return thread.lower()

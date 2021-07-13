@@ -25,6 +25,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from polarops import remove_punct
 
 from gensim.scripts.glove2word2vec import KeyedVectors
 
@@ -39,22 +40,6 @@ REMOVE_STOPWORDS = False     # Remove stopwords?
 EMBEDDINGS = False           # Use word embeddings, or just one-hot words?
 #WORD_EMBEDDINGS_FILE = "Set1_TweetDataWithoutSpam_Word.bin"
 WORD_EMBEDDINGS_FILE = "glove.6B.100d.w2v.txt"
-
-
-# TJ - Removes punctuation and capitalization from a string
-def remove_punct(thread):
-    thread = thread.replace("\\n", "")
-    thread = thread.replace("\t", "")
-    thread = thread.replace(">>", " inthreadquote newcomment ")
-    thread = thread.replace(">", " newcomment ")
-    punctuation = string.punctuation 
-    for element in punctuation:
-        thread = thread.replace(element, "")
-    thread = thread.replace("’", "")
-    thread = thread.replace("—", "")
-    thread = thread.replace("“", "")
-    thread = thread.replace("”", "")
-    return thread.lower()
 
 
 
@@ -158,7 +143,7 @@ def embed(threads):
         
 
 # load and shuffle the training data
-df = pd.read_csv("../classifier/training_data.csv")
+df = pd.read_csv("hand_tagged_data.csv")
 df = df.sample(frac=1)
 vocab = compute_vocab(df,NUM_TOP_WORDS)
 

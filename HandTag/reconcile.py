@@ -10,7 +10,7 @@ import subprocess
 
 # The file in which to put reconciled training examples. This script will
 # append to the file if it already exists.
-TRAINING_FILE = "training_data.csv"
+TRAINING_FILE = "../keras/hand_tagged_data.csv"
 
 if len(sys.argv) != 2:
     print("Usage: analyze.py completedPiggiedFile.csv.\n")

@@ -21,7 +21,7 @@ from collections import Counter
 
 
 
-file_name = "training_data.csv"
+file_name = "hand_tagged_data.csv"
 posts = pd.read_csv(file_name, delimiter = ",")
 
 # load doc into memory
