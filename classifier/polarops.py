@@ -73,12 +73,14 @@ def remove_punct(thread):
     return thread.lower()
 
 # TJ - Returns non-word features
-def get_features(currFeatures, threads, comments, itquotes, links, wordLength):
+def get_features(currFeatures, threads, comments, itquotes,
+                links, wordLength, ld):
     features = {}
     temp = 0
     links = 0
     num_comments = 0
     num_in_thread_quotes = 0
+    lexical_diversity = 0
 
     listToAdd = []
 
@@ -93,9 +95,13 @@ def get_features(currFeatures, threads, comments, itquotes, links, wordLength):
                 links = links + 1
             elif wordLength:
                 temp = temp + len(word)
-            #Add lexical diversity
+        if ld:
+            lexical_diversity = len(set(thread))/len(thread)
             
         listToAdd.append([temp/len(ready_thread), num_comments,
-            links/num_comments, num_in_thread_quotes/num_comments])
+            links/num_comments, num_in_thread_quotes/num_comments,
+            lexical_diversity])
+
     features = np.concatenate((currFeatures, np.array(listToAdd)), axis=1)
+
     return features
