@@ -98,7 +98,7 @@ def evaluate_settings(
     ld,                 # bool: use lexical diversity
     maxDf):             # float: ignore items above this document frequency
 
-    vectorizer = create_vectorizer(numTopFeatures + 5, method,
+    vectorizer = create_vectorizer(numTopFeatures, method,
         removeStopwords, useBigrams, maxDf)
     all_vectorized = vectorizer.fit_transform(all_threads).toarray()
     all_vectorized = get_features(all_vectorized, all_threads, comments,
