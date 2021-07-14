@@ -8,10 +8,11 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import datetime as dt
-from polarops import create_model, create_vectorizer
+from polarops import create_model, create_vectorizer, get_features
 import sys
+import nltk 
 
-if len(sys.argv) != 12:
+if len(sys.argv) != 18:
     sys.exit(
         '''
         Usage: parallel_sweep_helper.py
@@ -25,7 +26,8 @@ if len(sys.argv) != 12:
                     NUM_EPOCHS (int)
                     REMOVE_STOPWORDS (true/false)
                     USE_BIGRAMS (true/false)
-                    MAX_DFS (float).
+                    MAX_DFS (float)
+                    STEMMING (true/false).
         '''
     )
 
@@ -54,8 +56,21 @@ removeStopwords = sys.argv[9].lower() == "true"
 
 useBigrams = sys.argv[10].lower() == "true"
 
-maxDf = float(sys.argv[11])   # ignore unigrams/bigrams with document
+comments = sys.argv[11].lower() == "true"
+
+itquotes = sys.argv[12].lower() == "true"
+
+links = sys.argv[13].lower() == "true"
+
+wordLength = sys.argv[14].lower() == "true"
+
+ld = sys.argv[15].lower() == "true"
+
+
+maxDf = float(sys.argv[17])   # ignore unigrams/bigrams with document
                                 # frequency higher than this
+stemming = sys.argv[16].lower() == "true"
+
 
 ############################################################################
 
@@ -69,7 +84,10 @@ df = df.sample(frac=1)
 all_threads = df.text
 yall = np.where(df.polarized=="yes",1,0)
 
-
+def stem(thread):
+    stemmer = nltk.PorterStemmer()
+    thread=[stemmer.stem(w) for w in thread]
+    return thread
 # Run a suite of NUM_MODELS random models for a particular set of configuration
 # settings. Produce a histogram on disk with an appropriate name, and return an
 # array of NUM_MODELS accuracies.
@@ -80,11 +98,29 @@ def evaluate_settings(
     numEpochs,          # int
     removeStopwords,    # bool: remove stopwords?
     useBigrams,         # bool: use bigrams, or just unigrams?
-    maxDf):             # float: ignore items above this document frequency
+    comments,           # bool: use number of comments
+    itquotes,           # bool: use frequency of in-thread quotes
+    links,              # bool: use frequency of links
+    wordLength,         # bool: use average word length
+    ld,
+    maxDf,
+    stemming):             # float: ignore items above this document frequency
 
     vectorizer = create_vectorizer(numTopFeatures, method,
         removeStopwords, useBigrams, maxDf)
-    all_vectorized = vectorizer.fit_transform(all_threads).toarray()
+    if stemming:
+        all_vectorized = vectorizer.fit_transform(stem(all_threads)).toarray()
+    else:
+       all_vectorized = vectorizer.fit_transform(all_threads).toarray() 
+    print(" ")
+    print(all_vectorized)
+    print(all_threads)
+    print(comments)
+    print(itquotes)
+    print(links)
+    print(wordLength)
+    print(ld)
+    all_vectorized = get_features(all_vectorized, all_threads, comments, itquotes, links, wordLength,ld)
 
     accuracies = np.empty(NUM_MODELS)
 
@@ -100,10 +136,13 @@ def evaluate_settings(
     plt.text(x=accuracies.mean()+5,y=.9*ax.get_ylim()[1],
         s="{:.2f}%".format(accuracies.mean()),color="red")
     plt.xlabel("Accuracy (%)")
-    title = "Raw top {} {} {} {} {}n {}e {}maxDf".format(
+    title = "Raw top {} {} {} {} {}n {}e {}maxDf {} {} {} {} {} {}".format(
         numTopFeatures, "bigrams" if useBigrams else "unigrams",
             method, "removeSW" if removeStopwords else "keepSW",
-            numNeurons, numEpochs, maxDf)
+            numNeurons, numEpochs, maxDf, "stemmed" if stemming else "not stemmed", 
+            "num comments" if comments else "no num comments", "quotes" if itquotes else "no quotes",
+            "links" if links else "no links", "wordlength" if wordLength else "no wordlength",
+            "ld" if ld else "no ld")
     plt.title(title)
     plt.savefig(title.replace(" ","_") + ".png")
     return accuracies
@@ -121,12 +160,11 @@ def validate(all_vectorized, yall, numNeurons=20, numEpochs=20):
 
     return model.predict(test_vthreads)[:,0].round() == ytest
 
-
-acc = evaluate_settings(numTopFeatures, method, numNeurons, numEpochs,
-    removeStopwords, useBigrams, maxDf)
+acc = evaluate_settings(numTopFeatures, method, numNeurons, numEpochs, removeStopwords, useBigrams,comments, itquotes,links, wordLength,ld, maxDf, stemming)
 
 with open(OUTPUT_CSV_FILE, "a", encoding="utf-8") as f:
-    f.write("{},{},{},{},{},{},{},{}\n".format(numTopFeatures, method,
-        numNeurons, numEpochs, removeStopwords, useBigrams, maxDf, acc.mean()))
+    f.write("{},{},{},{},{},{},{},{},{},{},{},{},{},{}\n".format(numTopFeatures, method,
+        numNeurons, numEpochs, removeStopwords, useBigrams,comments, itquotes,links,wordLength,ld, maxDf,stemming, acc.mean()))
     f.flush()
     f.close()
+    
