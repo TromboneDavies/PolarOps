@@ -96,7 +96,7 @@ def get_features(currFeatures, threads, comments, itquotes,
             elif wordLength:
                 temp = temp + len(word)
         if ld:
-            lexical_diversity = len(set(thread))/len(thread)
+            lexical_diversity = len(set(ready_thread))/len(ready_thread)
             
         if not comments:
             final_comments = 0
