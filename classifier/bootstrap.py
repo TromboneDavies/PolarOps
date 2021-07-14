@@ -6,7 +6,12 @@
 # the same name as the file given, but with "_polar" and "_nonpolar" appended
 # to the names. These will contain threads deemed "safely polar/non-polar,"
 # respectively, according to the thresholds min_bound and max_bound (see
-# below).
+# below). ** NO LONGER TRUE
+
+# ** AK UPDATE: After running this program, additional .csv files that will be
+# created are bootstrapped_data.csv (containing only bootstrapped data) and
+# training_data.csv (containing both hand tagged and bootstrapped). These will 
+# be in the classifier directory.
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -45,10 +50,10 @@ min_bound = .1
 max_bound = .95
 
 # int: number of most common words/bigrams to retain
-numTopFeatures = 5000
+numTopFeatures = 3000
 
 # str: binary, freq, count, or tfidf
-method = 'count'
+method = 'binary'
 
 # int: number of "neurons" in our only layer
 numNeurons = 20
@@ -78,7 +83,6 @@ wordLength = True
 maxDf = .9
 
 ############################################################################
-
 
 
 
@@ -112,11 +116,15 @@ histo = model.fit(allVectorized[0:len(handTaggedThreads),:],
 
 bootstrap['prediction'] = model.predict(
     allVectorized[len(handTaggedThreads):,:])[:,0]
+bootstrap['polarized']=np.where(bootstrap.prediction > max_bound, "yes", "no")
 
 safelyNonpolarized = bootstrap[bootstrap.prediction < min_bound]
 safelyPolarized = bootstrap[bootstrap.prediction > max_bound]
 
-safelyNonpolarized.to_csv(BOOTSTRAP_DATA_FILE.replace(".csv","_nonpolar.csv"),
-    index=False, encoding="utf-8")
-safelyPolarized.to_csv(BOOTSTRAP_DATA_FILE.replace(".csv","_polar.csv"),
-    index=False, encoding="utf-8")
+# Create csv of bootstrapped data.
+safelyBootstrapped = pd.concat([safelyNonpolarized, safelyPolarized], ignore_index=True)
+safelyBootstrapped.to_csv("bootstrapped_data.csv", index=False, encoding="utf-8")
+
+# Create csv of new training data (hand_tagged_data + bootstrapped_data).
+newTrainingData = pd.concat([safelyBootstrapped, ht], ignore_index=True)
+newTrainingData.to_csv("training_data.csv", index=False, encoding="utf-8")
