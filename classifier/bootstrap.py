@@ -17,7 +17,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 import datetime as dt
 import tensorflow.compat.v1.logging
-from polarops import create_model, create_vectorizer, remove_punct
+from polarops import create_model, create_vectorizer, remove_punct, get_features
 import sys
 
 
@@ -62,6 +62,18 @@ removeStopwords = False
 # bool: use bigrams, or just unigrams?
 useBigrams = True
 
+# bool: Use number of comments as a feature
+comments = True
+
+# bool: Use average number of in thread quotes as a feature
+itquotes = True
+
+# bool: Use average number of links as a feature
+links = True
+
+# bool: Use average word length as a feature
+wordLength = True
+
 # float: ignore unigrams/bigrams with document frequency higher than this
 maxDf = .9
 
@@ -87,34 +99,8 @@ vectorizer = create_vectorizer(numTopFeatures, method,
     removeStopwords, useBigrams, maxDf)
 allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
-def get_features(currFeatures, threads):
-    features = {}
-    temp = 0
-    links = 0
-    num_comments = 0
-    num_in_thread_quotes = 0
 
-    listToAdd = []
-
-    for thread in threads:
-        ready_thread = remove_punct(thread)
-        for word in ready_thread.split(" "):
-            if "newcom" in word:
-                num_comments = num_comments + 1
-            elif "inthreadquot" in word:
-                num_in_thread_quotes = num_in_thread_quotes + 1
-            elif "http" in word:
-                links = links + 1
-            else:
-                temp = temp + len(word)
-            
-        listToAdd.append([temp/len(ready_thread), num_comments,
-            links/num_comments, num_in_thread_quotes/num_comments])
-
-    features = np.concatenate((currFeatures, np.array(listToAdd)), axis=1)
-    return features
-
-allVectorized = get_features(allVectorized, allThreads)
+allVectorized = get_features(allVectorized, allThreads, comments, itquotes, links, wordLength)
 
 # Create a "blank" neural net with the right number of dimensions.
 model = create_model(allVectorized.shape[1], numNeurons)

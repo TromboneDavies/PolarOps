@@ -5,6 +5,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 import tensorflow.compat.v1.logging
 import string
+import numpy as np
 
 
 # Suppress annoying (and red herring, apparently) warning message from TF.
@@ -70,3 +71,31 @@ def remove_punct(thread):
     thread = thread.replace("“", "")
     thread = thread.replace("”", "")
     return thread.lower()
+
+# TJ - Returns non-word features
+def get_features(currFeatures, threads, comments, itquotes, links, wordLength):
+    features = {}
+    temp = 0
+    links = 0
+    num_comments = 0
+    num_in_thread_quotes = 0
+
+    listToAdd = []
+
+    for thread in threads:
+        ready_thread = remove_punct(thread)
+        for word in ready_thread.split(" "):
+            if "newcom" in word and comments:
+                num_comments = num_comments + 1
+            elif "inthreadquot" in word and itquotes:
+                num_in_thread_quotes = num_in_thread_quotes + 1
+            elif "http" in word and links:
+                links = links + 1
+            elif wordLength:
+                temp = temp + len(word)
+            #Add lexical diversity
+            
+        listToAdd.append([temp/len(ready_thread), num_comments,
+            links/num_comments, num_in_thread_quotes/num_comments])
+    features = np.concatenate((currFeatures, np.array(listToAdd)), axis=1)
+    return features

@@ -7,7 +7,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import datetime as dt
-from polarops import create_model, create_vectorizer
+from polarops import create_model, create_vectorizer, get_features
 
 
 # To run, set the ALL_CAPS variables below. The first two should be single
@@ -50,6 +50,18 @@ REMOVE_STOPWORDSES = [ True ]
 # bool: use bigrams, or just unigrams?
 USE_BIGRAMSES = [ True, False ]
 
+# bool: Use number of comments as a feature
+COMMENTS = [ True ]
+
+# bool: Use average number of in thread quotes as a feature
+ITQUOTES = [ True ]
+
+# bool: Use average number of links as a feature
+LINKS = [ True ]
+
+# bool: Use average word length as a feature
+WORDLENGTH = [ True ]
+
 # float: ignore unigrams/bigrams with document frequency higher than this
 MAX_DFS = [ .5,.95 ]
 
@@ -76,11 +88,17 @@ def evaluate_settings(
     numEpochs,          # int
     removeStopwords,    # bool: remove stopwords?
     useBigrams,         # bool: use bigrams, or just unigrams?
+    comments,           # bool: use number of comments
+    itquotes,           # bool: use frequency of in-thread quotes
+    links,              # bool: use frequency of links
+    wordLength,         # bool: use average word length
     maxDf):             # float: ignore items above this document frequency
 
-    vectorizer = create_vectorizer(numTopFeatures, method,
+    vectorizer = create_vectorizer(numTopFeatures + 4, method,
         removeStopwords, useBigrams, maxDf)
     all_vectorized = vectorizer.fit_transform(all_threads).toarray()
+    all_vectorized = get_features(all_vectorized, all_threads, comments,
+                    itquotes, links, wordLength)
 
     accuracies = np.empty(NUM_MODELS)
 
@@ -131,7 +149,7 @@ total = len(NUM_TOP_FEATURESES) * len(METHODS) * len(NUM_NEURONSES) * \
     len(NUM_EPOCHSES) * len(REMOVE_STOPWORDSES) * len(USE_BIGRAMSES) * \
     len(MAX_DFS)
 
-msg = "({} features, {}, {} neurons, {} epochs, {}, {}, {} maxDf)"
+msg = "({} features, {}, {} neurons, {} epochs, {}, {}, {}, {}, {}, {} {} maxDf)"
 
 for numTopFeatures in NUM_TOP_FEATURESES:
     for method in METHODS:
@@ -140,42 +158,52 @@ for numTopFeatures in NUM_TOP_FEATURESES:
                 for removeStopwords in REMOVE_STOPWORDSES:
                     for useBigrams in USE_BIGRAMSES:
                         for maxDf in MAX_DFS:
+                            for comment in COMMENTS:
+                                for itquotes in ITQUOTES:
+                                    for wordLengths in WORDLENGTH:
+                                        for links in LINKS:
 
-                            print("\n\n***** Evaluating configuration " +
-                                "{} of {} *****".format(curr,total))
-                            print(msg.format(numTopFeatures, method,
-                                numNeurons, numEpochs,
-                                "removeSW" if removeStopwords else "useSW",
-                                "bigrams" if useBigrams else "unigrams",
-                                maxDf))
+                                            print("\n\n***** Evaluating configuration " +
+                                                "{} of {} *****".format(curr,total))
+                                            print(msg.format(numTopFeatures, method,
+                                                numNeurons, numEpochs,
+                                                "removeSW" if removeStopwords else "useSW",
+                                                "bigrams" if useBigrams else "unigrams",
+                                                comment, itquotes, wordLengths,
+                                                links,
+                                                maxDf))
 
-                            acc = evaluate_settings(
-                                numTopFeatures,
-                                method,
-                                numNeurons,
-                                numEpochs,
-                                removeStopwords,
-                                useBigrams,
-                                maxDf)
-                            numTopFeaturesColumn = np.append(
-                                numTopFeaturesColumn, numTopFeatures)
-                            methodsColumn = np.append(
-                                methodsColumn, method)
-                            numNeuronsColumn = np.append(
-                                numNeuronsColumn, numNeurons)
-                            numEpochsColumn = np.append(
-                                numEpochsColumn, numEpochs)
-                            removeStopwordsColumn = np.append(
-                                removeStopwordsColumn, removeStopwords)
-                            useBigramsColumn = np.append(
-                                useBigramsColumn, useBigrams)
-                            maxDfsColumn = np.append(
-                                maxDfsColumn, maxDf)
-                            avgAccColumn = np.append(
-                                avgAccColumn, acc.mean())
+                                            acc = evaluate_settings(
+                                                numTopFeatures,
+                                                method,
+                                                numNeurons,
+                                                numEpochs,
+                                                removeStopwords,
+                                                useBigrams,
+                                                comment,
+                                                itquotes,
+                                                links,
+                                                wordLengths,
+                                                maxDf)
+                                            numTopFeaturesColumn = np.append(
+                                                numTopFeaturesColumn, numTopFeatures)
+                                            methodsColumn = np.append(
+                                                methodsColumn, method)
+                                            numNeuronsColumn = np.append(
+                                                numNeuronsColumn, numNeurons)
+                                            numEpochsColumn = np.append(
+                                                numEpochsColumn, numEpochs)
+                                            removeStopwordsColumn = np.append(
+                                                removeStopwordsColumn, removeStopwords)
+                                            useBigramsColumn = np.append(
+                                                useBigramsColumn, useBigrams)
+                                            maxDfsColumn = np.append(
+                                                maxDfsColumn, maxDf)
+                                            avgAccColumn = np.append(
+                                                avgAccColumn, acc.mean())
 
-                            curr += 1
-                            
+                                            curr += 1
+                                            
 results = pd.DataFrame({
     'numTopFeatures':numTopFeaturesColumn,
     'method':methodsColumn,
