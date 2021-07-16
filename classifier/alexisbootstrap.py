@@ -79,13 +79,11 @@ links = True
 # bool: Use average word length as a feature
 wordLength = True
 
-# bool: Use lexical diversity as a feature
-ld = True
-
 # float: ignore unigrams/bigrams with document frequency higher than this
 maxDf = .9
 
 ############################################################################
+
 
 
 # load and shuffle the hand-tagged training data
@@ -98,38 +96,30 @@ handTaggedLabels = np.where(ht.polarized=="yes",1,0)
 
 # load the data to bootstrap
 bootstrap = pd.read_csv(BOOTSTRAP_DATA_FILE)
+bootstrapThreads = bootstrap.text
 
-while previousAccuracy < currAccuracy:
+allThreads = np.append(handTaggedThreads,bootstrapThreads)
 
-    bootstrapThreads = bootstrap.text
-
-    allThreads = np.append(handTaggedThreads,bootstrapThreads)
-
-    vectorizer = create_vectorizer(numTopFeatures, method,
-        removeStopwords, useBigrams, maxDf)
-    allVectorized = vectorizer.fit_transform(allThreads).toarray()
+vectorizer = create_vectorizer(numTopFeatures, method,
+    removeStopwords, useBigrams, maxDf)
+allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
 
-    allVectorized = get_features(allVectorized, allThreads, comments, itquotes,
-    links, wordLength, ld)
+allVectorized = get_features(allVectorized, allThreads, comments, itquotes, links, wordLength)
 
-    # Create a "blank" neural net with the right number of dimensions.
-    model = create_model(allVectorized.shape[1], numNeurons)
+# Create a "blank" neural net with the right number of dimensions.
+model = create_model(allVectorized.shape[1], numNeurons)
 
-    # Train the neural net for numEpochs epochs on the training data.
-    histo = model.fit(allVectorized[0:len(handTaggedThreads),:],
-        handTaggedLabels, epochs=numEpochs, verbose=0)
+# Train the neural net for numEpochs epochs on the training data.
+histo = model.fit(allVectorized[0:len(handTaggedThreads),:],
+    handTaggedLabels, epochs=numEpochs, verbose=0)
 
-    bootstrap['prediction'] = model.predict(
-        allVectorized[len(handTaggedThreads):,:])[:,0]
+bootstrap['prediction'] = model.predict(
+    allVectorized[len(handTaggedThreads):,:])[:,0]
+bootstrap['polarized']=np.where(bootstrap.prediction > max_bound, "yes", "no")
 
-    bootstrap['polarized']=np.where(bootstrap.prediction > max_bound, "yes", "no")
-
-    safelyNonpolarized = bootstrap[bootstrap.prediction < min_bound]
-    safelyPolarized = bootstrap[bootstrap.prediction > max_bound]
-
-    print("{} safely non polarized\n{} safely polarized",
-        len(safelyNonpolarized), len(safelyPolarized))
+safelyNonpolarized = bootstrap[bootstrap.prediction < min_bound]
+safelyPolarized = bootstrap[bootstrap.prediction > max_bound]
 
 # Create csv of bootstrapped data.
 safelyBootstrapped = pd.concat([safelyNonpolarized, safelyPolarized], ignore_index=True)

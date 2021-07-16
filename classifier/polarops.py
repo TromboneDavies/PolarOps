@@ -87,7 +87,7 @@ def get_features(currFeatures, threads, comments, itquotes,
     for thread in threads:
         ready_thread = remove_punct(thread)
         for word in ready_thread.split(" "):
-            if "newcom" in word and comments:
+            if "newcom" in word:
                 num_comments = num_comments + 1
             elif "inthreadquot" in word and itquotes:
                 num_in_thread_quotes = num_in_thread_quotes + 1
@@ -96,9 +96,14 @@ def get_features(currFeatures, threads, comments, itquotes,
             elif wordLength:
                 temp = temp + len(word)
         if ld:
-            lexical_diversity = len(set(thread))/len(thread)
+            lexical_diversity = len(set(ready_thread))/len(ready_thread)
             
-        listToAdd.append([temp/len(ready_thread), num_comments,
+        if not comments:
+            final_comments = 0
+        else:
+            final_comments = num_comments
+
+        listToAdd.append([temp/len(ready_thread), final_comments,
             links/num_comments, num_in_thread_quotes/num_comments,
             lexical_diversity])
 
