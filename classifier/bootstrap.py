@@ -2,15 +2,9 @@
 # on unlabeled data and accepting only those which are predicted with extreme
 # confidence.
 #
-# After running this program, two additional .csv files will be created with
-# the same name as the file given, but with "_polar" and "_nonpolar" appended
-# to the names. These will contain threads deemed "safely polar/non-polar,"
-# respectively, according to the thresholds min_bound and max_bound (see
-# below). ** NO LONGER TRUE
-
-# ** AK UPDATE: After running this program, additional .csv files that will be
-# created are bootstrapped_data.csv (containing only bootstrapped data) and
-# training_data.csv (containing both hand tagged and bootstrapped). These will 
+# After running this program, additional .csv files that will be created are
+# bootstrapped_data.csv (containing only bootstrapped data) and
+# training_data.csv (containing both hand tagged and bootstrapped). These will
 # be in the classifier directory.
 
 import matplotlib.pyplot as plt
