@@ -1,7 +1,7 @@
 # validate.py: contains functions to create and train a neural net on
 # hand_tagged_data.csv, or some subset thereof, and evaluate its performance.
 # Functions that may be of use outside this script include validate(),
-# validation_hist(), perform_cross_validation(), and get_classifier(),
+# validation_hist(), perform_cross_validation(), get_classifier(), and
 # encode_features().
 
 import string
@@ -128,7 +128,7 @@ def embed(threads):
 def get_classifier(threads, labels, comments=False, itquotes=False,
     links=False, wordLength=False, ld=False):
 
-    model = define_model(numWords+5)
+    model = define_model(numWords+5)   # "5" because of TJ features
     Xtrain = get_features(encode_features(threads), threads, comments,
          itquotes, links, wordLength, ld)
     model.fit(Xtrain, labels, epochs=NUM_EPOCHS, verbose=0)
@@ -148,8 +148,8 @@ def encode_features(threads):
 # passed, and return the correctness of its predictions on all elements of the
 # remaining data points (i.e., the test set).
 # "all_threads" contains the features, and "yall" contains the labels.
-def validate(all_threads, yall, test_frac=.2, comments=False, itquotes=False,
-    links=False, wordLength=False, ld=False):
+def validate(all_threads, yall, comments=False, itquotes=False,
+    links=False, wordLength=False, ld=False, test_frac=.2):
 
     # split into training and test set
     training_threads, test_threads, ytrain, ytest = train_test_split(
@@ -173,8 +173,8 @@ def perform_cross_validation(numModels,all_threads,yall,
     accuracies = np.empty(numModels)
     for i in range(numModels):
         print("\nTraining model {}/{}...".format(i+1,numModels))
-        results = validate(all_threads, yall, test_frac, comments, itquotes,
-            links, wordLength, ld)
+        results = validate(all_threads, yall, comments, itquotes,
+            links, wordLength, ld, test_frac)
         accuracies[i] = sum(results)/len(results)*100
     return accuracies
 
