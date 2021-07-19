@@ -124,22 +124,9 @@ cdf['class_labels'] = classifier_labels
 #Contingency table to make graph
 year_label_m=pd.crosstab(cdf.year,cdf.class_labels,margins=True)
 ylm_r=year_label_m.div(year_label_m['All'],axis=0)*100
+#Make it a data frame for plotting purposes, remove 'All' row
+ylm_r=(pd.DataFrame(ylm_r)).drop(['All'])
 
+import matplotlib.pyplot as plt
+plt.plot(ylm_r.index.values, ylm_r.yes)
 
-
-
-
-
-
-
-
-
-#And none of these work for label probability for bootstrap(ignore below)
-
-# prob_dict = classifier.prob_classify_many(featuresets) 
-# for label in prob_dict:
-#     print(label)
-    
-# dist = classifier.prob_classify_many(featuresets)
-# for label in dist.samples():
-#     print("%s: %f" % (label, dist.prob(label)))

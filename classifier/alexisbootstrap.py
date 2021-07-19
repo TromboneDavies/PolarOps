@@ -79,6 +79,9 @@ links = True
 # bool: Use average word length as a feature
 wordLength = True
 
+# bool: Use lexical diversity as a feature
+ld = True
+
 # float: ignore unigrams/bigrams with document frequency higher than this
 maxDf = .9
 
@@ -105,7 +108,7 @@ vectorizer = create_vectorizer(numTopFeatures, method,
 allVectorized = vectorizer.fit_transform(allThreads).toarray()
 
 
-allVectorized = get_features(allVectorized, allThreads, comments, itquotes, links, wordLength)
+allVectorized = get_features(allVectorized, allThreads, comments, itquotes, links, wordLength, ld)
 
 # Create a "blank" neural net with the right number of dimensions.
 model = create_model(allVectorized.shape[1], numNeurons)
