@@ -1,7 +1,8 @@
 # validate.py: contains functions to create and train a neural net on
 # hand_tagged_data.csv, or some subset thereof, and evaluate its performance.
 # Functions that may be of use outside this script include validate(),
-# validation_hist(), perform_cross_validation(), and get_classifier().
+# validation_hist(), perform_cross_validation(), and get_classifier(),
+# encode_features().
 
 import string
 import re
@@ -122,7 +123,8 @@ def embed(threads):
 
 # Given the training data passed, return a neural net on which .predict() can
 # be called to make predictions on new data. (The argument to .predict() should
-# be a list of strings, each of which is a single thread.)
+# be a matrix each row of which is a set of features for one thread. This
+# matrix can be creatd with encode_features().
 def get_classifier(threads, labels):
     model = define_model(numWords)
     Xtrain = encode_features(threads)
