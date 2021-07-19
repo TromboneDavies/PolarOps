@@ -38,10 +38,10 @@ min_bound = .1
 max_bound = .95
 
 # int: number of most common words/bigrams to retain
-numTopFeatures = 3000
+numTopFeatures = 6000
 
 # str: binary, freq, count, or tfidf
-method = 'binary'
+method = 'count'
 
 # int: number of "neurons" in our only layer
 numNeurons = 20
