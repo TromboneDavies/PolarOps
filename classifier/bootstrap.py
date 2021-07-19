@@ -18,23 +18,17 @@ import datetime as dt
 import tensorflow.compat.v1.logging
 from polarops import create_model, create_vectorizer, remove_punct, get_features
 import sys
+from validate import get_classifier, perform_cross_validation, encode_features
 
 
 ############################################################################
 
-# Usage: bootstrap.py pathToUnlabeledFile.csv.
-if len(sys.argv) == 2:
-    BOOTSTRAP_DATA_FILE = sys.argv[1]
-else:
-    BOOTSTRAP_DATA_FILE = input("What is the name of the unlabeled .csv file" +
-        " (from the data_collection directory, of course) with the data you" +
-        " want to bootstrap?\n")
+# The number of new (unlabeled) data points to use in each iteration of the
+# bootstrap process.
+BOOTSTRAP_SIZE = 100
 
-if not BOOTSTRAP_DATA_FILE.endswith('.csv'):
-    BOOTSTRAP_DATA_FILE += '.csv'
-if not BOOTSTRAP_DATA_FILE.startswith('../data_collection/'):
-    BOOTSTRAP_DATA_FILE = "../data_collection/" + BOOTSTRAP_DATA_FILE
-
+# The number of random training sets to use for each model cross-validation.
+NUM_MODELS = 20
 
 # The prediction thresholds beyond which we will consider a bootstrapped sample
 # to be "safe" to use. If its prediction is < min_bound, we consider it safely
@@ -82,54 +76,83 @@ maxDf = .9
 ############################################################################
 
 
+# Usage: bootstrap.py pathToUnlabeledFile.csv.
+if len(sys.argv) == 2:
+    BOOTSTRAP_DATA_FILE = sys.argv[1]
+else:
+    BOOTSTRAP_DATA_FILE = input("What is the name of the unlabeled .csv file" +
+        " (from the data_collection directory, of course) with the data you" +
+        " want to bootstrap?\n")
+
+if not BOOTSTRAP_DATA_FILE.endswith('.csv'):
+    BOOTSTRAP_DATA_FILE += '.csv'
+if not BOOTSTRAP_DATA_FILE.startswith('../data_collection/'):
+    BOOTSTRAP_DATA_FILE = "../data_collection/" + BOOTSTRAP_DATA_FILE
+
+
+
 # load and shuffle the hand-tagged training data
 ht = pd.read_csv("hand_tagged_data.csv")
+del ht['ttype']
+del ht['community']
 ht = ht.sample(frac=1)
 
-## load all hand-tagged threads and labels.
+# load all hand-tagged threads and labels.
 handTaggedThreads = ht.text
 handTaggedLabels = np.where(ht.polarized=="yes",1,0)
 
-# load the data to bootstrap
-bootstrap = pd.read_csv(BOOTSTRAP_DATA_FILE)
+# load and shuffle the data to bootstrap
+bootstrapReservoir = pd.read_csv(BOOTSTRAP_DATA_FILE).sample(frac=1)
 
-while previousAccuracy < currAccuracy:
+# Start the boostrapping process by *only* using what we've hand-tagged.
+handTaggedPlus = ht.copy()
+trainingData = handTaggedThreads.copy()
+trainingLabels = handTaggedLabels.copy()
+previousAccuracy = 0
+print("\n    Initial model training...")
+currAccuracy = perform_cross_validation(NUM_MODELS, trainingData,
+    trainingLabels).mean()
 
-    bootstrapThreads = bootstrap.text
+print("\n    Starting bootstrapping...")
+loop_num = 0
+while previousAccuracy <= currAccuracy:
 
-    allThreads = np.append(handTaggedThreads,bootstrapThreads)
+    # TJ makes another good point: what if we run out of the bootstrap
+    # reservoir before we go down in accuracy? Yeah, T, handle that too.
 
-    vectorizer = create_vectorizer(numTopFeatures, method,
-        removeStopwords, useBigrams, maxDf)
-    allVectorized = vectorizer.fit_transform(allThreads).toarray()
+    if len(bootstrapReservoir) < BOOTSTRAP_SIZE:
+        print("No more bootstrap data!")
+        break
+    bootstrap = bootstrapReservoir.sample(BOOTSTRAP_SIZE)
+    bootstrapReservoir = bootstrapReservoir.drop(bootstrap.index)
+
+    classifier = get_classifier(trainingData, trainingLabels)
+    bootstrapResults = classifier.predict(encode_features(bootstrap.text))
+    del bootstrap['batch_num']
+    toKeep = bootstrap[(bootstrapResults < min_bound) | 
+        (bootstrapResults > max_bound)].copy()
+    predictions = bootstrapResults[(bootstrapResults < min_bound) | 
+        (bootstrapResults > max_bound)]
+    
+    toKeep['polarized'] = np.where(predictions < .5, 0, 1)
+    handTaggedPlus = handTaggedPlus.append(toKeep)
+
+    trainingData = np.append(trainingData, toKeep.text)
+    trainingLabels = np.append(trainingLabels, toKeep['polarized'])
+
+    previousAccuracy = currAccuracy
+    currAccuracy = perform_cross_validation(NUM_MODELS, trainingData,
+        trainingLabels).mean()
+    if previousAccuracy > currAccuracy:
+        handTaggedPlus = handTaggedPlus.drop(toKeep.index)
+    else:
+        print(("\n    We just added {} samples, and went from {:.2f}% to " +
+            "{:.2f}% accuracy.").format(len(toKeep), previousAccuracy,
+            currAccuracy))
+    loop_num+= 1
 
 
-    allVectorized = get_features(allVectorized, allThreads, comments, itquotes,
-    links, wordLength, ld)
-
-    # Create a "blank" neural net with the right number of dimensions.
-    model = create_model(allVectorized.shape[1], numNeurons)
-
-    # Train the neural net for numEpochs epochs on the training data.
-    histo = model.fit(allVectorized[0:len(handTaggedThreads),:],
-        handTaggedLabels, epochs=numEpochs, verbose=0)
-
-    bootstrap['prediction'] = model.predict(
-        allVectorized[len(handTaggedThreads):,:])[:,0]
-
-    bootstrap['polarized']=np.where(bootstrap.prediction > max_bound, "yes", "no")
-
-    safelyNonpolarized = bootstrap[bootstrap.prediction < min_bound]
-    safelyPolarized = bootstrap[bootstrap.prediction > max_bound]
-
-    print("{} safely non polarized\n{} safely polarized",
-        len(safelyNonpolarized), len(safelyPolarized))
-
-# Create csv of bootstrapped data.
-safelyBootstrapped = pd.concat([safelyNonpolarized, safelyPolarized], ignore_index=True)
-safelyBootstrapped.to_csv("bootstrapped_data.csv", index=False, encoding="utf-8")
-
-# Create csv of new training data (hand_tagged_data + bootstrapped_data).
-newTrainingData = pd.concat([safelyBootstrapped, ht], ignore_index=True)
-newTrainingData.to_csv("training_data.csv", index=False, encoding="utf-8")
+# Finally, write our hand-tagged training data, with all our accuracy-
+# increasing bootstapped samples, to a file.
+handTaggedPlus.to_csv("hand_tagged_plus.csv",encoding="utf-8",index=False)
 
