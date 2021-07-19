@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from polarops import remove_punct
+from polarops import remove_punct, get_features
 
 from gensim.scripts.glove2word2vec import KeyedVectors
 
@@ -125,9 +125,12 @@ def embed(threads):
 # be called to make predictions on new data. (The argument to .predict() should
 # be a matrix each row of which is a set of features for one thread. This
 # matrix can be creatd with encode_features().
-def get_classifier(threads, labels):
-    model = define_model(numWords)
-    Xtrain = encode_features(threads)
+def get_classifier(threads, labels, comments=False, itquotes=False,
+    links=False, wordLength=False, ld=False):
+
+    model = define_model(numWords+5)
+    Xtrain = get_features(encode_features(threads), threads, comments,
+         itquotes, links, wordLength, ld)
     model.fit(Xtrain, labels, epochs=NUM_EPOCHS, verbose=0)
     return model
 
@@ -145,7 +148,8 @@ def encode_features(threads):
 # passed, and return the correctness of its predictions on all elements of the
 # remaining data points (i.e., the test set).
 # "all_threads" contains the features, and "yall" contains the labels.
-def validate(all_threads, yall, test_frac=.2):
+def validate(all_threads, yall, test_frac=.2, comments=False, itquotes=False,
+    links=False, wordLength=False, ld=False):
 
     # split into training and test set
     training_threads, test_threads, ytrain, ytest = train_test_split(
@@ -153,7 +157,8 @@ def validate(all_threads, yall, test_frac=.2):
 
     # encode separate training and test matrices
     model = get_classifier(training_threads, ytrain)
-    Xtest = encode_features(test_threads)
+    Xtest = get_features(encode_features(test_threads), test_threads,
+        comments, itquotes, links, wordLength, ld)
 
     return model.predict(Xtest)[:,0].round() == ytest
 
@@ -161,11 +166,15 @@ def validate(all_threads, yall, test_frac=.2):
 
 # Train the model on numModels randomly-chosen training sets, and return an
 # array of the models' accuracies (as a percentage).
-def perform_cross_validation(numModels,all_threads,yall,test_frac=.2):
+def perform_cross_validation(numModels,all_threads,yall,
+    comments=False, itquotes=False, links=False, wordLength=False, ld=False,
+    test_frac=.2):
+
     accuracies = np.empty(numModels)
     for i in range(numModels):
         print("\nTraining model {}/{}...".format(i+1,numModels))
-        results = validate(all_threads, yall, test_frac)
+        results = validate(all_threads, yall, test_frac, comments, itquotes,
+            links, wordLength, ld)
         accuracies[i] = sum(results)/len(results)*100
     return accuracies
 

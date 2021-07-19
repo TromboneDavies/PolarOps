@@ -6,6 +6,7 @@ from keras.layers import Dense
 import tensorflow.compat.v1.logging
 import string
 import numpy as np
+import nltk
 
 
 # Suppress annoying (and red herring, apparently) warning message from TF.
@@ -73,8 +74,8 @@ def remove_punct(thread):
     return thread.lower()
 
 # TJ - Returns non-word features
-def get_features(currFeatures, threads, comments, itquotes,
-                links, wordLength, ld):
+def get_features(currFeatures, threads, comments=False, itquotes=False,
+                links=False, wordLength=False, ld=False):
     features = {}
     temp = 0
     links = 0
@@ -110,3 +111,9 @@ def get_features(currFeatures, threads, comments, itquotes,
     features = np.concatenate((currFeatures, np.array(listToAdd)), axis=1)
 
     return features
+
+
+def stem(thread):
+    stemmer = nltk.PorterStemmer()
+    thread=[stemmer.stem(w) for w in thread]
+    return thread

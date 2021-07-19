@@ -72,7 +72,7 @@ wordLength = False
 ld = True
 
 # bool: Stem words, or use raw words?
-stem = True
+useStem = True
 
 # float: ignore unigrams/bigrams with document frequency higher than this
 maxDf = .95
@@ -115,7 +115,7 @@ trainingLabels = handTaggedLabels.copy()
 previousAccuracy = 0
 print("\n    Initial model training...")
 currAccuracy = perform_cross_validation(NUM_MODELS, trainingData,
-    trainingLabels).mean()
+    trainingLabels, comments, itquotes, links, wordLength, ld).mean()
 
 print("\n    Starting bootstrapping...")
 loop_num = 0
@@ -128,8 +128,14 @@ while previousAccuracy <= currAccuracy:
     bootstrap = bootstrapReservoir.sample(BOOTSTRAP_SIZE)
     bootstrapReservoir = bootstrapReservoir.drop(bootstrap.index)
 
+    if useStem:
+        daText = stem(bootstrap.text)
+    else:
+        daText = bootstrap.text
     classifier = get_classifier(trainingData, trainingLabels)
-    bootstrapResults = classifier.predict(encode_features(bootstrap.text))
+    bootstrapResults = classifier.predict(get_features(
+        encode_features(daText), daText, comments, itquotes,
+        links, wordLength, ld))
     del bootstrap['batch_num']
     toKeep = bootstrap[(bootstrapResults < min_bound) | 
         (bootstrapResults > max_bound)].copy()
@@ -145,7 +151,7 @@ while previousAccuracy <= currAccuracy:
 
     previousAccuracy = currAccuracy
     currAccuracy = perform_cross_validation(NUM_MODELS, trainingData,
-        trainingLabels).mean()
+        trainingLabels, comments, itquotes, links, wordLength, ld).mean()
     if previousAccuracy > currAccuracy:
         handTaggedPlus = handTaggedPlus.drop(toKeep.index)
     else:
