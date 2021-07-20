@@ -19,7 +19,7 @@ from sklearn.model_selection import train_test_split
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from polarops import remove_punct, get_features
+from polarops import remove_punct, get_features, create_vectorizer
 
 from gensim.scripts.glove2word2vec import KeyedVectors
 
@@ -63,10 +63,10 @@ def create_tokenizer(lines):
     tokenizer.fit_on_texts(lines)
     return tokenizer
 
-def define_model(numWords):
+def define_model(numWords, numNeurons=NUM_NEURONS):
     # define network
     model = Sequential()
-    model.add(Dense(NUM_NEURONS, input_shape=(numWords,), activation='relu'))
+    model.add(Dense(numNeurons, input_shape=(numWords,), activation='relu'))
     model.add(Dense(1, activation='sigmoid'))
     # compile network
     model.compile(loss='binary_crossentropy', optimizer='adam',
@@ -214,6 +214,47 @@ def validate_one():
         sum(results), len(results), sum(results)/len(results)*100))
 
 
+# toClassify: A list/Series of strings, each of which is a thread to classify.
+# trainingData: A list/Series of strings, each of which is a training thread.
+# trainingLabels: A list of the corresponding polarization values for each of the
+#   training data, as "yes"/"no" strings
+def classify(toClassify, trainingData, trainingLabels, numTopFeatures, method,
+    removeStopwords, useBigrams, maxDf, useComments, useItQuotes, useLinks,
+    useWordLength, useLd, numNeurons, numEpochs):
+
+    # Create a vectorizer which will use only the training data, not the new
+    # data.
+    training_v = create_vectorizer(numTopFeatures, method, removeStopwords,
+        useBigrams, maxDf)
+
+    # Go ahead and vectorize the training data.
+    training_vectorized = training_v.fit_transform(trainingData).toarray()
+
+    # Save the vectorizer's vocabulary so it can be used with the new data,
+    # which will have different words and frequencies, of course.
+    training_vocab = training_v.vocabulary_
+
+    # Add TJ's (mostly worthless, as it turns out) extra features.
+    training_vectorizedPlusTJ = get_features(training_vectorized,
+        trainingData, useComments, useItQuotes, useLinks, useWordLength, useLd)
+
+    # Now create a new vectorizer (weird, I know) which will use the previous
+    # vectorizer's vocabulary. This is so that the new documents are encoded in
+    # precisely the same way
+    new_v = create_vectorizer(numTopFeatures, method, removeStopwords,
+        useBigrams, maxDf, vocabulary=training_v.vocabulary_)
+    new_vectorized = new_v.fit_transform(toClassify).toarray()
+    new_vectorizedPlusTJ = get_features(new_vectorized, toClassify,
+        useComments, useItQuotes, useLinks, useWordLength, useLd)
+
+    trainingLabelsCoded = np.where(np.array(trainingLabels) == "yes", 1, 0)
+
+    model = define_model(numTopFeatures+5, numNeurons) # "5" because of TJ
+    model.fit(training_vectorizedPlusTJ, trainingLabelsCoded, epochs=numEpochs,
+        verbose=0)
+
+    results = model.predict(new_vectorizedPlusTJ)
+    return results
 
 
 if REMOVE_STOPWORDS:
