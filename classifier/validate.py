@@ -141,7 +141,10 @@ def encode_features(threads):
     if EMBEDDINGS:
         return embed(threads)
     else:
-        return tokenizer.texts_to_matrix(threads, mode=METHOD)
+        try:
+            return tokenizer.texts_to_matrix(threads, mode=METHOD)
+        except AttributeError:
+            sys.exit("Could not encode_features({})!".format(threads))
 
 
 # Train the model one time on a randomly-chosen training set from the data set

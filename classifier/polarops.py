@@ -61,18 +61,21 @@ def create_model(numWords, numNeurons):
 
 # TJ - Removes punctuation and capitalization from a string
 def remove_punct(thread):
-    thread = thread.replace("\\n", "")
-    thread = thread.replace("\t", "")
-    thread = thread.replace(">>", " inthreadquote newcomment ")
-    thread = thread.replace(">", " newcomment ")
-    punctuation = string.punctuation 
-    for element in punctuation:
-        thread = thread.replace(element, "")
-    thread = thread.replace("’", "")
-    thread = thread.replace("—", "")
-    thread = thread.replace("“", "")
-    thread = thread.replace("”", "")
-    return thread.lower()
+    try:
+        thread = thread.replace("\\n", "")
+        thread = thread.replace("\t", "")
+        thread = thread.replace(">>", " inthreadquote newcomment ")
+        thread = thread.replace(">", " newcomment ")
+        punctuation = string.punctuation 
+        for element in punctuation:
+            thread = thread.replace(element, "")
+        thread = thread.replace("’", "")
+        thread = thread.replace("—", "")
+        thread = thread.replace("“", "")
+        thread = thread.replace("”", "")
+        return thread.lower()
+    except AttributeError:
+        sys.exit("Could not remove_punct({})!".format(thread))
 
 # TJ - Returns non-word features
 def get_features(currFeatures, threads, comments=False, itquotes=False,
