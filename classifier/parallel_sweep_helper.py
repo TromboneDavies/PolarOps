@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 from sklearn.model_selection import train_test_split
 import datetime as dt
-from polarops import create_model, create_vectorizer, get_features
+from polarops import create_model, create_vectorizer, get_features, stem
 import sys
 import nltk 
 
@@ -84,10 +84,6 @@ df = df.sample(frac=1)
 all_threads = df.text
 yall = np.where(df.polarized=="yes",1,0)
 
-def stem(thread):
-    stemmer = nltk.PorterStemmer()
-    thread=[stemmer.stem(w) for w in thread]
-    return thread
 # Run a suite of NUM_MODELS random models for a particular set of configuration
 # settings. Produce a histogram on disk with an appropriate name, and return an
 # array of NUM_MODELS accuracies.
