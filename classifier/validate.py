@@ -224,7 +224,7 @@ def validate_one():
 #   classify(the texts of the threads for a particular year and subreddit,
 #       the text column of your hand_tagged_plus.csv dataframe,
 #       the polarized column of your hand_tagged_plus.csv dataframe,
-#       6000, "count", True, True, .95, False, False, False, False, True,
+#       6000, "count", False, True, .95, False, False, False, False, True,
 #       20, 20)
 # You will get back a np array of numbers between 0 and 1.
 # Use an np.where() on that to convert to "yes" and "nos".
