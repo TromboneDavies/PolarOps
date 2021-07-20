@@ -252,28 +252,34 @@ def createMythicalDataFrame(handTaggedPlusDataFrame, subredditNames):
     years = np.array([],dtype=int)
     subredditColumn = np.array([],dtype=object)
     perc_polars = np.array([],dtype=float)
-    for subredditName in subredditNames:
-        subredditName = subredditName.lower()
-        print("Predicting for {}...".format(subredditName))
-        if not subredditName.endswith('.csv'):
-            subredditFileName = subredditName + '.csv'
-        else:
-            subredditFileName = subredditName
-        subredditFileName = "../data_collection/" + subredditFileName
-        subredditDf = pd.read_csv(subredditFileName, encoding='utf-8')
-        subredditDf['year'] = \
-            subredditDf.date.astype(int).astype("datetime64[s]").dt.year
-        for year in sorted(subredditDf.year.unique()):
-            print("    year {}...".format(year))
-            threads = subredditDf[subredditDf.year == year].text
-            results = classify(threads, handTaggedPlusDataFrame.text,
-                handTaggedPlusDataFrame.polarized,
-                6000, "count", False, True, .95, False, False, False, False,
-                True, 20, 20)
-            percent_polarized = (results > .5).sum() / len(results) * 100
-            years = np.append(years, year)
-            subredditColumn = np.append(subredditColumn, subredditName)
-            perc_polars = np.append(perc_polars, percent_polarized)
+    with open("mythicalDataFrame.csv","w",encoding="utf-8") as f:
+        print("subreddit,year,perc_polar",file=f)
+        f.flush()
+        for subredditName in subredditNames:
+            subredditName = subredditName.lower()
+            print("Predicting for {}...".format(subredditName))
+            if not subredditName.endswith('.csv'):
+                subredditFileName = subredditName + '.csv'
+            else:
+                subredditFileName = subredditName
+            subredditFileName = "../data_collection/" + subredditFileName
+            subredditDf = pd.read_csv(subredditFileName, encoding='utf-8')
+            subredditDf['year'] = \
+                subredditDf.date.astype(int).astype("datetime64[s]").dt.year
+            for year in sorted(subredditDf.year.unique()):
+                print("    year {}...".format(year))
+                threads = subredditDf[subredditDf.year == year].text
+                results = classify(threads, handTaggedPlusDataFrame.text,
+                    handTaggedPlusDataFrame.polarized,
+                    6000, "count", False, True, .95, False, False, False, False,
+                    True, 20, 20)
+                percent_polarized = (results > .5).sum() / len(results) * 100
+                years = np.append(years, year)
+                subredditColumn = np.append(subredditColumn, subredditName)
+                perc_polars = np.append(perc_polars, percent_polarized)
+                print("{},{},{}".format(subredditName,year,percent_polarized),
+                    file=f)
+                f.flush()
     masterDataFrame = pd.DataFrame({'subreddit':subredditColumn,
         'year':years, 'perc_polar':perc_polars})
     return masterDataFrame
