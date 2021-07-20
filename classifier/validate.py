@@ -20,6 +20,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from polarops import remove_punct, get_features, create_vectorizer
+from datetime import datetime
 
 from gensim.scripts.glove2word2vec import KeyedVectors
 
@@ -212,6 +213,47 @@ def validate_one():
     results = validate(all_threads, yall)
     print("\nThe model got {}/{} ({:.2f}%) correct.".format(
         sum(results), len(results), sum(results)/len(results)*100))
+
+
+# createMythicalDataFrame: produce a DataFrame with three columns: subreddit,
+# year, and perc_polar, for the training data and list of subreddit names
+# passed.
+#
+# Example usage:
+# mdf = createMythicalDataFrame(pd.read_csv("hand_tagged_plus.csv"),
+#    ['congress','politics','bannedfromthe_donald','capitalism'])
+#
+# handTaggedPlusDataFrame: the DataFrame corresponding to the final training
+# set (hand-tagged plus bootstrapped) that we are going to use, baby.
+# subredditNames: a list of names of subreddits, each of which should have a
+# .csv file in the data_collection directory.
+def createMythicalDataFrame(handTaggedPlusDataFrame, subredditNames):
+    years = np.array([],dtype=int)
+    subredditColumn = np.array([],dtype=object)
+    perc_polars = np.array([],dtype=float)
+    for subredditName in subredditNames:
+        subredditName = subredditName.lower()
+        if not subredditName.endswith('.csv'):
+            subredditFileName = subredditName + '.csv'
+        else:
+            subredditFileName = subredditName
+        subredditFileName = "../data_collection/" + subredditFileName
+        subredditDf = pd.read_csv(subredditFileName, encoding='utf-8')
+        subredditDf['year'] = \
+            subredditDf.date.astype(int).astype("datetime64[s]").dt.year
+        for year in subredditDf.year.unique():
+            threads = subredditDf[subredditDf.year == year].text
+            results = classify(threads, handTaggedPlusDataFrame.text,
+                handTaggedPlusDataFrame.polarized,
+                6000, "count", False, True, .95, False, False, False, False,
+                True, 20, 20)
+            percent_polarized = (results > .5).sum() / len(results) * 100
+            years = np.append(years, year)
+            subredditColumn = np.append(subredditColumn, subredditName)
+            perc_polars = np.append(perc_polars, percent_polarized)
+    masterDataFrame = pd.DataFrame({'subreddit':subredditColumn,
+        'year':years, 'perc_polar':perc_polars})
+    return masterDataFrame
 
 
 # toClassify: A list/Series of strings, each of which is a thread to classify.
