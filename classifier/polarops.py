@@ -21,7 +21,7 @@ tensorflow.compat.v1.logging.set_verbosity(tensorflow.compat.v1.logging.ERROR)
 # useBigrams: if True, use both bigrams and unigrams. If False, unigrams only.
 # maxDf: ignore unigrams/bigrams with document frequency higher than this
 def create_vectorizer(numTopFeatures, method, removeStopwords, useBigrams,
-    maxDf):
+    maxDf, vocabulary=None):
 
     if method == "tfidf":
         vectorizer = TfidfVectorizer(
@@ -33,7 +33,8 @@ def create_vectorizer(numTopFeatures, method, removeStopwords, useBigrams,
             max_df=maxDf,
             max_features=numTopFeatures,
             binary=False,   # experiment?
-            ngram_range=(1,2 if useBigrams else 1))
+            ngram_range=(1,2 if useBigrams else 1),
+            vocabulary=vocabulary)
     else:
         vectorizer = CountVectorizer(
             lowercase=True,
@@ -44,7 +45,8 @@ def create_vectorizer(numTopFeatures, method, removeStopwords, useBigrams,
             max_df=maxDf,
             max_features=numTopFeatures,
             binary=(method=='binary'),
-            ngram_range=(1,2 if useBigrams else 1))
+            ngram_range=(1,2 if useBigrams else 1),
+            vocabulary=vocabulary)
     return vectorizer
 
 
