@@ -215,6 +215,27 @@ def validate_one():
         sum(results), len(results), sum(results)/len(results)*100))
 
 
+# createMythicalGraph: Create a plot called "mythicalGraph.png" in the current
+# directory, which contains a time series plot for each subreddit in the list
+# of subreddit names passed.
+def createMythicalGraph(handTaggedPlusDataFrame, subredditNames):
+    mdf = createMythicalDataFrame(handTaggedPlusDataFrame, subredditNames)
+    createMythicalGraphHelper(mdf)
+
+
+def createMythicalGraphHelper(mdf):
+    ax = plt.gca()
+    for sub in mdf.subreddit.unique():
+        mdf[mdf.subreddit==sub].plot(kind='line',
+            x='year', y='perc_polar', ax=ax, label=sub)
+    plt.ylim(-5,105)
+    plt.ylabel("% of polarized threads")
+    plt.legend()
+    plt.title("Estimated polarization of subreddits over time")
+    plt.show()
+    plt.savefig("mythicalGraph.png")
+
+
 # createMythicalDataFrame: produce a DataFrame with three columns: subreddit,
 # year, and perc_polar, for the training data and list of subreddit names
 # passed.
@@ -233,6 +254,7 @@ def createMythicalDataFrame(handTaggedPlusDataFrame, subredditNames):
     perc_polars = np.array([],dtype=float)
     for subredditName in subredditNames:
         subredditName = subredditName.lower()
+        print("Predicting for {}...".format(subredditName))
         if not subredditName.endswith('.csv'):
             subredditFileName = subredditName + '.csv'
         else:
@@ -241,7 +263,8 @@ def createMythicalDataFrame(handTaggedPlusDataFrame, subredditNames):
         subredditDf = pd.read_csv(subredditFileName, encoding='utf-8')
         subredditDf['year'] = \
             subredditDf.date.astype(int).astype("datetime64[s]").dt.year
-        for year in subredditDf.year.unique():
+        for year in sorted(subredditDf.year.unique()):
+            print("    year {}...".format(year))
             threads = subredditDf[subredditDf.year == year].text
             results = classify(threads, handTaggedPlusDataFrame.text,
                 handTaggedPlusDataFrame.polarized,
