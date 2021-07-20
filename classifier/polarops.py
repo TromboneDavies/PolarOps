@@ -4,7 +4,6 @@ from sklearn.feature_extraction.text import CountVectorizer, TfidfVectorizer
 from keras.models import Sequential
 from keras.layers import Dense
 import tensorflow.compat.v1.logging
-from validate.py import get_classifier
 import string
 import numpy as np
 import nltk
@@ -49,16 +48,6 @@ def create_vectorizer(numTopFeatures, method, removeStopwords, useBigrams,
     return vectorizer
 
 
-# Threads: The raw text being classified
-# trainingData: The raw text being trained on
-# trainingLabels: The corresponding polarization values for each of the training
-# data
-def classify(threads, trainingData, trainingLabels):
-    new_threads = stem(the_new_threads_to_classify)
-    classifier = get_classifier(trainingData, trainingLabels)
-    results = classifier.predict(get_features(
-        encode_features(new_threads), new_threads, False, False,
-        False, False,True))
 
 # create an "empty" neural net of the right dimensions.
 def create_model(numWords, numNeurons):
