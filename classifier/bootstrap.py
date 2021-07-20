@@ -26,17 +26,17 @@ from validate import get_classifier, perform_cross_validation, encode_features
 
 # The number of new (unlabeled) data points to use in each iteration of the
 # bootstrap process.
-BOOTSTRAP_SIZE = 10000
+BOOTSTRAP_SIZE = 5000
 
 # The number of random training sets to use for each model cross-validation.
-NUM_MODELS = 20
+NUM_MODELS = 2
 
 # The prediction thresholds beyond which we will consider a bootstrapped sample
 # to be "safe" to use. If its prediction is < min_bound, we consider it safely
 # non-polarized. If its prediction is > max_bound, we consider it safely
 # polarized. Otherwise, we consider it unreliable and won't use it.
-min_bound = .01
-max_bound = .99
+min_bound = .05
+max_bound = .95
 
 # int: number of most common words/bigrams to retain
 numTopFeatures = 6000
@@ -72,7 +72,7 @@ wordLength = False
 ld = True
 
 # bool: Stem words, or use raw words?
-useStem = True
+useStem = False
 
 # float: ignore unigrams/bigrams with document frequency higher than this
 maxDf = .95
@@ -107,6 +107,7 @@ handTaggedLabels = np.where(ht.polarized=="yes",1,0)
 
 # load and shuffle the data to bootstrap
 bootstrapReservoir = pd.read_csv(BOOTSTRAP_DATA_FILE).sample(frac=1)
+bootstrapReservoir = bootstrapReservoir[~bootstrapReservoir.date.isna()]
 
 # Start the boostrapping process by *only* using what we've hand-tagged.
 handTaggedPlus = ht.copy()
