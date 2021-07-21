@@ -16,4 +16,4 @@ p <- ggplot(mdf,
     ylab("% of Threads Polarized") +
     labs(title="Estimated Polarization of Subreddits Over Time") +
     theme(plot.title=element_text(hjust=0.5))
-ggsave("mythicalGraphBySubreddit.png", height=6, width=9)
+ggsave("mythicalGraphBySubreddit.png", height=10/3, width=29/3)
