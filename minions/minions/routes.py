@@ -13,7 +13,7 @@ def collect():
 @collector.route("/who", methods=['GET','POST'])
 def who():
     if request.method == "POST":
-        if request.form['codename'] != "polarops":
+        if request.form['codename'] != "umwpolarops":
             return """
             <h1 style="color:red;">JUST WHO DO YOU THINK YOU ARE???</h1>
             """
