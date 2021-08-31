@@ -1,11 +1,16 @@
-from minions import collector
 from flask import render_template, session, redirect, request, url_for
+import sqlite3
+from minions import collector
+
 
 @collector.route("/")
 @collector.route("/collect")
 def collect():
     if 'name' in session:
-        return f"welcome, {session['name']}!"
+        conn = sqlite3.connect("pile.db")
+        results = conn.execute("select * from prac").fetchall()
+        conn.close()
+        return render_template("tag.html",results=results)
     else:
         return redirect(url_for("who"))
 
