@@ -1,10 +1,14 @@
 <html>
 <head>
     <title>Minions!</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
 <h1>The PolarOps<sup>&reg;</sup> Minions<sup>&trade;</sup> tagger<h1>
-<h2>Welcome, {{session['name']}}!</h2>
-<p>Here 'tis: {{ results[0] }}</p>
+<h2>Welcome, {{session['name']}}...
+Time to rate thread #{{num_threads}}!</h2>
+<div id="thread">
+    {{ thread_to_rate }}
+</div>
 </body>
 </html>
