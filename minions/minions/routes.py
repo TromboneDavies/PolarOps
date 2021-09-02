@@ -6,38 +6,65 @@ from minions import collector
 
 
 @collector.route("/")
-@collector.route("/collect")
+@collector.route("/collect", methods=['GET','POST'])
 def collect():
     if 'name' in session:
-        conn = sqlite3.connect(os.path.join(collector.instance_path,
-                current_app.config['DATABASE']),
-            detect_types=sqlite3.PARSE_DECLTYPES)
-        conn.execute(
-            f"""
-            drop table if exists {session['name']}
-            """
-        )
-        conn.execute(
-            f"""
-            create temporary table {session['name']} as 
-                select comment_id from pile
-                except select comment_id from rated where rater=?
-            """, (session['name'],)).fetchone()
-        thread_to_rate = conn.execute(
-            f"""
-            select comment_id,text from pile where comment_id=
-            (select comment_id from {session['name']} order by random() limit 1)
-            """).fetchone()
-        num_threads = conn.execute(
-            f"""
-            select count(*) from rated where rater=?
-            """, (session['name'],)).fetchone()[0]
-        conn.close()
-        thread = thread_to_rate[1].replace("\\n","<br>")
-        return render_template("tag.html",thread_to_rate=Markup(thread),
-            num_threads=num_threads+1)
+        if request.method == 'POST':
+            record_tag(request.form['cid'], session['name'],
+                request.form['rating'])
+            return redirect(url_for("collect"))
+        else:
+            cid, thread, num_threads = select_thread_for(session['name'])
+            return render_template("tag.html",thread_to_rate=Markup(thread),
+                num_threads=num_threads+1, cid=cid)
     else:
         return redirect(url_for("who"))
+
+
+# Returns a tuple containing the comment ID of a thread, the thread's text, and
+# the number of threads already tagged by this user.
+def select_thread_for(name):
+    conn = sqlite3.connect(os.path.join(collector.instance_path,
+            current_app.config['DATABASE']),
+        detect_types=sqlite3.PARSE_DECLTYPES)
+    conn.execute(
+        f"""
+        drop table if exists {name}
+        """
+    )
+    conn.execute(
+        f"""
+        create temporary table {name} as 
+            select comment_id from pile
+            except select comment_id from rated where rater=?
+        """, (name,)).fetchone()
+    thread_to_rate = conn.execute(
+        f"""
+        select comment_id,text from pile where comment_id=
+        (select comment_id from {name} order by random() limit 1)
+        """).fetchone()
+    num_threads = conn.execute(
+        f"""
+        select count(*) from rated where rater=?
+        """, (name,)).fetchone()[0]
+    conn.close()
+    thread = thread_to_rate[1].replace("\\n","<br>")
+    return thread_to_rate[0], thread, num_threads
+
+
+# Store this user's tag for the comment ID passed.
+def record_tag(comment_id, name, tag):
+    conn = sqlite3.connect(os.path.join(collector.instance_path,
+            current_app.config['DATABASE']),
+        detect_types=sqlite3.PARSE_DECLTYPES)
+    conn.execute(
+        f"""
+        insert into rated (comment_id, rater, rating) values (?,?,?)
+        """,
+        (comment_id, name, tag)
+    )
+    conn.commit()
+    conn.close()
 
 
 @collector.route("/who", methods=['GET','POST'])

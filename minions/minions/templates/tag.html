@@ -6,9 +6,20 @@
 <body>
 <h1>The PolarOps<sup>&reg;</sup> Minions<sup>&trade;</sup> tagger<h1>
 <h2>Welcome, {{session['name']}}...
-Time to rate thread #{{num_threads}}!</h2>
+Time to rate thread #{{num_threads}}! (<tt>{{cid}}</tt>)</h2>
 <div id="thread">
     {{ thread_to_rate }}
 </div>
+<form action="{{ url_for('collect') }}" method=POST >
+<label for="rating">Which is your verdict, minion?</label>
+<input type="radio" name="rating" id="rating"
+value="polarized">Polarized</input>
+<input type="radio" name="rating" id="rating"
+value="notpolarized">Not polarized</input>
+<input type="radio" name="rating" id="rating"
+value="other">Neither/both/unsure</input>
+<input type="hidden" name="cid" value={{cid}} />
+<input type="submit" name="submit" value="Tag this thread"/>
+</form>
 </body>
 </html>
