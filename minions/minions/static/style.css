@@ -5,3 +5,22 @@ div#thread {
     margin-left:40px;
     margin-right:40px;
 }
+
+form {
+    width:30%;
+    margin-top:50px;
+    margin-left:auto;
+    margin-right:auto;
+    border: solid 1px;
+    padding:25px;
+    display: flex;
+    flex-direction: column;
+}
+
+div.choice {
+    padding-bottom:14px;
+}
+
+label.question {
+    padding-bottom:24px;
+}
