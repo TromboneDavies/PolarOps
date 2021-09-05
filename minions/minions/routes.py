@@ -4,6 +4,15 @@ import sqlite3
 import os
 from minions import collector
 
+all_piles_users = ['sabine','ryan']
+pile_assignments = {
+    'christine':1,
+    'ajay':1,
+    'stephen':3,
+    'veronica':3,
+    'tj':2,
+    'alexis':2,
+}
 
 @collector.route("/")
 @collector.route("/collect", methods=['GET','POST'])
@@ -27,6 +36,9 @@ def select_thread_for(name):
     conn = sqlite3.connect(os.path.join(collector.instance_path,
             current_app.config['DATABASE']),
         detect_types=sqlite3.PARSE_DECLTYPES)
+    if name in ['pile','rated']:
+        print(f"NO WAY will we allow '{name}' as a name!")
+        return 0
     conn.execute(
         f"""
         drop table if exists {name}
@@ -73,6 +85,13 @@ def who():
         if request.form['codename'] != "umwpolarops":
             return """
             <h1 style="color:red;">JUST WHO DO YOU THINK YOU ARE???</h1>
+            """
+        if (request.form['name'] not in all_piles_users and
+            request.form['name'] not in pile_assignments):
+            return """
+            <h2 style="color:red;">
+            Invalid username: use your first name, all lower-case, please!</h2>
+            <p>Press the browser's 'back' button to try again.</p>
             """
         session['name'] = request.form['name']
         return redirect(url_for("collect"))
