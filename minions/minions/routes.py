@@ -24,6 +24,7 @@ def collect():
             return redirect(url_for("collect"))
         else:
             cid, thread, num_threads = select_thread_for(session['name'])
+            thread = thread.replace("\t","&nbsp;&nbsp;&nbsp;")
             return render_template("tag.html",thread_to_rate=Markup(thread),
                 num_threads=num_threads+1, cid=cid)
     else:
