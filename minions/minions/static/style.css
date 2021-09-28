@@ -24,3 +24,17 @@ div.choice {
 label.question {
     padding-bottom:24px;
 }
+
+table#ratings {
+    font-size:large;
+    margin-left:auto;
+    margin-right:auto;
+    padding:5px;
+    border:solid 2px;
+    margin-bottom:50px;
+}
+
+table#ratings td {
+    border:solid 1px;
+    padding:10px;
+}

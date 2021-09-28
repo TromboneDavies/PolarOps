@@ -1,0 +1,21 @@
+
+<html>
+<head>
+    <title>Minions recap</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+<h1>Thread <tt>{{cid}}</tt>:</h1>
+<table id=ratings >
+{% for tuple in ratings %}
+<tr><td>{{tuple[0]}}</td><td>{{tuple[1]}}</td></tr>
+{% endfor %}
+</table>
+<div id="thread">
+    {{ thread_to_view }}
+</div>
+<form action="{{ url_for('view') }}" method=POST >
+<p>Next thread: <input name="comment_id" /><input type="submit" value="View" /></p>
+</form>
+</body>
+</html>
