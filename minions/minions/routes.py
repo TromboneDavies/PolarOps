@@ -142,25 +142,31 @@ def view():
         comment_id = request.form['comment_id']
     else:
         comment_id = request.args.get('comment_id')
-    conn = sqlite3.connect(os.path.join(collector.instance_path,
-            current_app.config['DATABASE']),
-        detect_types=sqlite3.PARSE_DECLTYPES)
 
-    found = False
-    for pile in [f'pile{i}' for i in range(1,4)]:
-        cnt = conn.execute(f"select count(*) from {pile} where comment_id=?",
+    if comment_id:
+        conn = sqlite3.connect(os.path.join(collector.instance_path,
+                current_app.config['DATABASE']),
+            detect_types=sqlite3.PARSE_DECLTYPES)
+
+        found = False
+        for pile in [f'pile{i}' for i in range(1,4)]:
+            cnt = conn.execute(f"select count(*) from {pile} where comment_id=?",
+                (comment_id,)).fetchone()
+            if cnt[0] > 0:
+                found = True
+                break
+        if not found:
+            return f"No such comment ID {comment_id} found!"
+
+        text = conn.execute(f"select text from {pile} where comment_id=?",
             (comment_id,)).fetchone()
-        if cnt[0] > 0:
-            found = True
-            break
-    if not found:
-        return f"No such comment ID {comment_id} found!"
-
-    text = conn.execute(f"select text from {pile} where comment_id=?",
-        (comment_id,)).fetchone()
-    ratings = conn.execute(f"select rater, rating from rated where comment_id=?",
-        (comment_id,)).fetchall()
-    thread = text[0].replace("\\n","<br>")
-    thread = thread.replace("\t","&nbsp;&nbsp;&nbsp;")
-    return render_template("view.html",
-       thread_to_view=Markup(thread), ratings=ratings, cid=comment_id)
+        ratings = conn.execute(
+            f"select rater, rating from rated where comment_id=?",
+            (comment_id,)).fetchall()
+        thread = text[0].replace("\\n","<br>")
+        thread = thread.replace("\t","&nbsp;&nbsp;&nbsp;")
+        return render_template("view.html",
+           thread_to_view=Markup(thread), ratings=ratings, cid=comment_id)
+    else:
+        return render_template("view.html",
+           thread_to_view=None)

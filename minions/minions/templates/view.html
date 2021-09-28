@@ -5,6 +5,7 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
 </head>
 <body>
+{% if thread_to_view %}
 <h1>Thread <tt>{{cid}}</tt>:</h1>
 <table id=ratings >
 {% for tuple in ratings %}
@@ -14,6 +15,7 @@
 <div id="thread">
     {{ thread_to_view }}
 </div>
+{% endif %}
 <form action="{{ url_for('view') }}" method=POST >
 <p>Next thread: <input name="comment_id" /><input type="submit" value="View" /></p>
 </form>
