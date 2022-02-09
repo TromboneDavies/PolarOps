@@ -4,8 +4,7 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import scipy.stats
-import seaborn as sns
+import sqlite3
 from statsmodels.stats.inter_rater import fleiss_kappa, aggregate_raters
 import sys
 
@@ -29,19 +28,5 @@ votes = votes[(votes.polarized == 0) | (votes.notpolarized == 0)]
 votes = votes[(votes.polarized >= MAX_VOTES_REQ) |
     (votes.notpolarized >= MAX_VOTES_REQ)]
 
-uns = np.array([],dtype=int)
-ups = np.array([],dtype=int)
-ucs = np.array([],dtype=int)
-btraw = pd.crosstab(m.comment_id,m.rating)
-bt = btraw[["polarized","notpolarized"]]
-bt = bt.value_counts().sort_index()
-for p,n in [(p,n) for p in range(10) for n in range(10) if (p==0) != (n==0)]:
-    if (p,n) in bt:
-        uns = np.append(uns,n)
-        ups = np.append(ups,p)
-        ucs = np.append(ucs,bt[(p,n)])
-temp = pd.DataFrame({'notpolarized':uns,'polarized':ups,'total':ucs})
-usable = temp[(temp.polarized>=MAX_VOTES_REQ)|(temp.notpolarized>=MAX_VOTES_REQ)]
 
-print(f"Old way said {usable.total.sum()} threads.")
 
