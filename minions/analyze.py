@@ -5,6 +5,7 @@ import scipy.stats
 import seaborn as sns
 from statsmodels.stats.inter_rater import fleiss_kappa, aggregate_raters
 import sys
+from os.path import exists
 
 # The number of "positive" (non-"other") votes a unanimous thread must receive
 # from the 8 raters in order to count as usable.
@@ -67,6 +68,14 @@ num_rejected = sum(rejected.total)
 print(f"Immediately rejecting {sum(rejected.total)} non-unanimous threads.")
 print(f"Sadly discarding {num_later} threads that are unanimous but have fewer than {MAX_VOTES_REQ} votes for polar/non.")
 print(f"Can use {num_usable} threads!")
+if exists("fall.csv"):
+    print("fall.csv already exists! Not overwriting.")
+else:
+    print(f"Writing those to fall.csv...")
+    fall = btraw[((btraw.notpolarized==0)&(btraw.polarized>=MAX_VOTES_REQ))|
+          ((btraw.polarized==0)&(btraw.notpolarized>=MAX_VOTES_REQ))]
+    (fall.polarized>0).to_csv("fall.csv")
+    
 if input("...") == 'q': sys.exit()
 
 
