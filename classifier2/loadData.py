@@ -40,6 +40,11 @@ def vectorize(texts):
 
 
 ht = pd.read_csv("TheHandTaggedDataBaby.csv", comment="#")
+
+# Eliminate the top 10% longest threads, since they comprise most of a long,
+# probably-not-representative tail. (See email chain 2/18/2022.)
+ht = ht[ht.text.str.len() < ht.text.str.len().quantile(.9)]
+
 cleaned_texts = np.empty(len(ht), dtype=object)
 for i,row in enumerate(ht.itertuples()):
     cleaned_texts[i] = clean(row.text)
