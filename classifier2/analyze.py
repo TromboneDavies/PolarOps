@@ -1,3 +1,4 @@
+# Perform initial exploratory analysis of hand-tagged data.
 
 import numpy as np
 import pandas as pd
@@ -38,3 +39,10 @@ plt.annotate(f"median: {lengths.median():.1f} chars", (3000,400), color="red")
 plt.savefig("threadLengths.png", dpi=300)
 
 
+# According to the Google Text Classification Guide, a good rule of thumb is to
+# look at the ratio of number of samples to the number of words per sample. If
+# < 1500, an n-gram model is better than a sequence model. Ours is laughably
+# smaller than this (much smaller than 1, actually!) so n-grams it is.
+# https://developers.google.com/machine-learning/guides/text-classification/step-2-5
+ratio = len(ht) / lengths.sum()
+print(f"The Google ratio is {ratio:.5f}.")
