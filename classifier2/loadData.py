@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import random
+import re
 
 # See also https://scikit-learn.org/stable/modules/classes.html#text-feature-extraction-ref
 from sklearn.feature_extraction.text import CountVectorizer
@@ -22,7 +23,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 random.seed(2022)
 
 TRAIN_FRAC = .8     # Fraction of data used for training (not validation)
-NGRAM_MAX = 1       # 1 - unigrams only; 2- unigrams+bigrams; etc.
+NGRAM_MAX = 2       # 1 - unigrams only; 2- unigrams+bigrams; etc.
 
 
 
@@ -30,6 +31,9 @@ def clean(dirty):
     """Given a real-live Reddit comment thread, prepare it for processing by
     converting to lower-case, removing punctuation, etc.
     """
+    dirty = re.sub(r"\(https?[^)]*\)","",dirty)
+    dirty = dirty.replace("https://en.wikipedia.org/wiki","")
+    dirty = dirty.replace("\\n","")
     return dirty.replace("'","")
 
 def vectorize(texts, vocab=None):
