@@ -19,8 +19,8 @@ import re
 # See also https://scikit-learn.org/stable/modules/classes.html#text-feature-extraction-ref
 from sklearn.feature_extraction.text import TfidfVectorizer
 
+random.seed(12345)
 
-random.seed(2022)
 
 TRAIN_FRAC = .8     # Fraction of data used for training (not validation)
 NGRAM_MAX = 2       # 1 - unigrams only; 2- unigrams+bigrams; etc.

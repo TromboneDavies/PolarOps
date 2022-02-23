@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 import random
 from sklearn.feature_selection import SelectKBest, f_classif
 from loadData import ht, train, validate, vectorize
+# We're setting the seed first in loadData.py.
+# random.seed(12345)
 
 
 # The number of "best" features to use, as measured by f_classif.
