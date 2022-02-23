@@ -66,12 +66,12 @@ def vectorize(train_texts, validate_texts=None, vocab=None):
         vocabulary=vocab,     # use vocab in the texts
     )
     train_vecs = vectorizer.fit_transform(train_texts).toarray()
-    if validate_texts:
-        validate_vecs = vectorizer.transform(validate_texts).toarray()
-        return (train_vecs, validate_vecs, vectorizer.get_feature_names_out(),
+    if validate_texts is None:
+        return (train_vecs, vectorizer.get_feature_names_out(),
             vectorizer.vocabulary_)
     else:
-        return (train_vecs, vectorizer.get_feature_names_out(),
+        validate_vecs = vectorizer.transform(validate_texts).toarray()
+        return (train_vecs, validate_vecs, vectorizer.get_feature_names_out(),
             vectorizer.vocabulary_)
 
 
