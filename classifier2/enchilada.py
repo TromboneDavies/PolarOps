@@ -19,60 +19,29 @@ import matplotlib.pyplot as plt
 import random
 import re
 import sys
+from sklearn.feature_selection import SelectKBest, f_classif
+import tensorflow as tf
+from tensorflow.keras import models
+from tensorflow.keras.layers import Dense, Dropout
+
+
 
 # See also https://scikit-learn.org/stable/modules/classes.html#text-feature-extraction-ref
 from sklearn.feature_extraction.text import TfidfVectorizer
 
 # Defaults; overridden by command-line args.
-seed = 12345
-train_frac = .8
-feats = 1000
-layers = 2
-units = 64
-dropout = .2
-ngram = 2
-min_df = 0.0
-max_df = 1.0
-stop = 'english'
-
-
-def print_usage():
-    print("""
-        Usage: enchilada.py 
-            seed=[seed]
-            train_frac=[train_frac]
-            feats=[feats]
-            layers=[layers]
-            units=[units]
-            dropout=[dropout]
-            ngram=[ngram]
-            min_df=[min_df]
-            max_df=[max_df]
-            stop=[stop].
-    """)
-
-for arg in sys.argv[1:]:
-    parts = arg.split("=")
-    if len(parts) != 2:
-        print_usage()
-        sys.exit(f"Malformed argument '{arg}'.")
-    if parts[0] not in globals():
-        print_usage()
-        sys.exit(f"Unknown argument '{parts[0]}'.")
-    else:
-        globals()[parts[0]] = parts[1]
-        if parts[0] in { 'stop' }:
-            if parts[1] == "None":
-                globals()[parts[0]] = None
-        elif parts[0] in { 'train_frac', 'dropout', 'min_df', 'max_df' }:
-            globals()[parts[0]] = float(globals()[parts[0]])
-        else:
-            globals()[parts[0]] = int(globals()[parts[0]])
-            
-
-random.seed(seed)
-
-
+params = {
+    'seed': 12345,
+    'train_frac': .8,
+    'feats': 1000,
+    'layers': 2,
+    'units': 64,
+    'dropout': .2,
+    'ngram': 2,
+    'min_df': 0.0,
+    'max_df': 1.0,
+    'stop': 'english'
+}
 
 
 
@@ -106,11 +75,11 @@ def vectorize(train_texts, validate_texts=None, vocab=None):
     vectorizer = TfidfVectorizer(
         encoding='utf-8',
         lowercase=True,
-        stop_words=stop,     # could use None
-        ngram_range=(1,ngram),
+        stop_words=params['stop'],     # could use None
+        ngram_range=(1,params['ngram']),
         analyzer='word',
-        min_df=min_df,
-        max_df=max_df,
+        min_df=params['min_df'],
+        max_df=params['max_df'],
         max_features=None,   # unlimited
         vocabulary=vocab,     # use vocab in the texts
     )
@@ -124,82 +93,134 @@ def vectorize(train_texts, validate_texts=None, vocab=None):
             vectorizer.vocabulary_)
 
 
-ht = pd.read_csv("TheHandTaggedDataBaby.csv", comment="#")
-ht.sample(frac=1)   # Shuffle the data before doing anything else.
 
-# Eliminate the top 10% longest threads, since they comprise most of a long,
-# probably-not-representative tail. (See email chain 2/18/2022.)
-ht = ht[ht.text.str.len() < ht.text.str.len().quantile(.9)]
+def build_and_eval(overridden_params):
 
-cleaned_texts = np.empty(len(ht), dtype=object)
-for i,row in enumerate(ht.itertuples()):
-    cleaned_texts[i] = clean(row.text)
-ht['text'] = cleaned_texts
+    for p,v in overridden_params.items():
+        params[p] = v
 
-train = ht.sample(frac=train_frac)
-validate = ht[~ht.index.isin(train.index)]
+    random.seed(params['seed'])
 
+    ht = pd.read_csv("TheHandTaggedDataBaby.csv", comment="#")
+    ht.sample(frac=1)   # Shuffle the data before doing anything else.
 
-# Build a classifier.
-# TODO: word embeddings
+    # Eliminate the top 10% longest threads, since they comprise most of a
+    # long, probably-not-representative tail. (See email chain 2/18/2022.)
+    ht = ht[ht.text.str.len() < ht.text.str.len().quantile(.9)]
 
-from sklearn.feature_selection import SelectKBest, f_classif
-import tensorflow as tf
-from tensorflow.keras import models
-from tensorflow.keras.layers import Dense, Dropout
+    cleaned_texts = np.empty(len(ht), dtype=object)
+    for i,row in enumerate(ht.itertuples()):
+        cleaned_texts[i] = clean(row.text)
+    ht['text'] = cleaned_texts
 
+    train = ht.sample(frac=params['train_frac'])
+    validate = ht[~ht.index.isin(train.index)]
 
 
-# The number of "best" features to use, as measured by f_classif.
-NUM_TOP_FEATURES = feats
+    # Build a classifier.
+    # TODO: word embeddings
 
-# The number of layers in our neural net (including the last layer/activation).
-NUM_LAYERS = layers
-NUM_UNITS = units
-DROPOUT_RATE = dropout
-LEARNING_RATE = 1e-3
-NUM_EPOCHS = 500
-BATCH_SIZE = 128
+    # The number of "best" features to use, as measured by f_classif.
+    NUM_TOP_FEATURES = params['feats']
 
-
-train_vecs, validate_vecs, feature_names, _ = \
-    vectorize(train.text, validate.text)
-
-selector = SelectKBest(f_classif, k=NUM_TOP_FEATURES)
-selector.fit(train_vecs, train.polarized)
-x_train = selector.transform(train_vecs).astype('float32')
-x_validate = selector.transform(validate_vecs).astype('float32')
-fns = selector.get_feature_names_out(feature_names)
+    # The number of layers in our neural net (including the last
+    # layer/activation).
+    NUM_LAYERS = params['layers']
+    NUM_UNITS = params['units']
+    DROPOUT_RATE = params['dropout']
+    LEARNING_RATE = 1e-3
+    NUM_EPOCHS = 500
+    BATCH_SIZE = 128
 
 
-model = models.Sequential()
-model.add(Dropout(rate=DROPOUT_RATE, input_shape=(NUM_TOP_FEATURES,)))
-for _ in range(NUM_LAYERS-1):
-    model.add(Dense(units=NUM_UNITS, activation='relu'))
-    model.add(Dropout(rate=DROPOUT_RATE))
-model.add(Dense(units=1, activation="sigmoid"))
+    train_vecs, validate_vecs, feature_names, _ = \
+        vectorize(train.text, validate.text)
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
-model.compile(optimizer=optimizer, loss="binary_crossentropy",
-    metrics=['acc'])
+    selector = SelectKBest(f_classif, k=NUM_TOP_FEATURES)
+    selector.fit(train_vecs, train.polarized)
+    x_train = selector.transform(train_vecs).astype('float32')
+    x_validate = selector.transform(validate_vecs).astype('float32')
+    fns = selector.get_feature_names_out(feature_names)
 
-callbacks = []
 
-history = model.fit(
-    x_train,
-    train.polarized,
-    epochs=NUM_EPOCHS,
-    callbacks=callbacks,
-    validation_data=(x_validate, validate.polarized),
-    verbose=2,  # Logs once per epoch.
-    batch_size=BATCH_SIZE)
+    model = models.Sequential()
+    model.add(Dropout(rate=DROPOUT_RATE, input_shape=(NUM_TOP_FEATURES,)))
+    for _ in range(NUM_LAYERS-1):
+        model.add(Dense(units=NUM_UNITS, activation='relu'))
+        model.add(Dropout(rate=DROPOUT_RATE))
+    model.add(Dense(units=1, activation="sigmoid"))
 
-history = history.history
-print('Validation accuracy: {acc}, loss: {loss}'.format(
-    acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-model.save('PolarOps.h5')
+    optimizer = tf.keras.optimizers.Adam(learning_rate=LEARNING_RATE)
+    model.compile(optimizer=optimizer, loss="binary_crossentropy",
+        metrics=['acc'])
 
-with open("results.csv","a",encoding="utf-8") as f:
-    print(f"{seed},{feats},{layers},{units},{dropout},{ngram},{min_df},"
-        f"{max_df},{stop},{history['val_acc'][-1]}", file=f)
+    callbacks = []
 
+    history = model.fit(
+        x_train,
+        train.polarized,
+        epochs=NUM_EPOCHS,
+        callbacks=callbacks,
+        validation_data=(x_validate, validate.polarized),
+        verbose=0,  # Logs once per epoch.
+        batch_size=BATCH_SIZE)
+
+    history = history.history
+    print('Validation accuracy: {acc}, loss: {loss}'.format(
+        acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
+    model.save('PolarOps.h5')
+
+    with open("results.csv","a",encoding="utf-8") as f:
+        print(f"""{params['seed']},{params['feats']},{params['layers']},{params['units']},{params['dropout']},{params['ngram']},{params['min_df']},{params['max_df']},{params['stop']},{history['val_acc'][-1]}""", file=f)
+
+
+
+if __name__ == "__main__":
+
+    def print_usage():
+        print("""
+            Usage: enchilada.py [SWEEP]
+                seed=[seed]
+                train_frac=[train_frac]
+                feats=[feats]
+                layers=[layers]
+                units=[units]
+                dropout=[dropout]
+                ngram=[ngram]
+                min_df=[min_df]
+                max_df=[max_df]
+                stop=[stop].
+        """)
+
+    if len(sys.argv) < 2:
+        print_usage()
+        sys.exit()
+    if len(sys.argv) == 2 and sys.argv[1]=="SWEEP":
+        params['feats'] = 2000  # seems good
+        params['layers'] = 5  # seems marginally better than fewer
+        for min_df in np.arange(0,.015,.005):
+            for max_df in np.arange(.6,1.05,.05):
+                params['min_df'] = min_df
+                params['max_df'] = min(max_df,1)
+                print(f"Evaluating with min_df={min_df}, max_df={max_df}...")
+                build_and_eval(params)
+    else:
+        for param in sys.argv[1:]:
+            parts = param.split("=")
+            if len(parts) != 2:
+                print_usage()
+                sys.exit(f"Malformed argument '{param}'.")
+            if parts[0] not in params:
+                print_usage()
+                sys.exit(f"Unknown argument '{parts[0]}'.")
+            else:
+                params[parts[0]] = parts[1]
+                if parts[0] in { 'stop' }:
+                    if params[parts[0]] == "None":
+                        params[parts[0]] = None
+                elif parts[0] in {'train_frac','dropout','min_df','max_df'}:
+                    params[parts[0]] = float(params[parts[0]])
+                else:
+                    params[parts[0]] = int(params[parts[0]])
+
+        build_and_eval(params)
