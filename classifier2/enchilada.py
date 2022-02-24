@@ -20,6 +20,8 @@ import random
 import re
 import math
 import sys
+import json
+import pickle
 from sklearn.feature_selection import SelectKBest, f_classif
 import tensorflow as tf
 from tensorflow.keras import models
@@ -102,7 +104,9 @@ def build_and_eval(overridden_params={}):
     which will selectively override the defaults at the top of this file.
 
     In the case where train_frac = 1, all data will be used for training, and
-    hence the evaluation step will be omitted.
+    hence the evaluation step will be omitted. Also, in this case, the "vocab"
+    for all the training samples (a dictionary) will be written to vocab.json
+    and the already-fit feature selector will be pickled to selector.pickle.
 
     This function returns the trained model object, as well as saving it to
     the Polarops.model directory structure.
@@ -153,14 +157,19 @@ def build_and_eval(overridden_params={}):
 
 
     if evaluate:
-        train_vecs, validate_vecs, feature_names, _ = \
+        train_vecs, validate_vecs, feature_names,  = \
             vectorize(train.text, validate.text)
     else:
-        train_vecs, _, _ = \
+        train_vecs, _, vocab = \
             vectorize(train.text, None)
+        with open("vocab.json","w") as f:
+            json.dump(vocab, f)
 
     selector = SelectKBest(f_classif, k=NUM_TOP_FEATURES)
     selector.fit(train_vecs, train.polarized)
+    if not evaluate:
+        with open("selector.pickle","wb") as f:
+            pickle.dump(selector, f)
     x_train = selector.transform(train_vecs).astype('float32')
     if evaluate:
         x_validate = selector.transform(validate_vecs).astype('float32')
