@@ -27,6 +27,7 @@ import tensorflow as tf
 from tensorflow.keras import models
 from tensorflow.keras.layers import Dense, Dropout
 
+# TODO: remove the "Reddit zero-width space" (x200b)
 
 
 # See also https://scikit-learn.org/stable/modules/classes.html#text-feature-extraction-ref
