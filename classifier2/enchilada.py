@@ -99,6 +99,8 @@ def build_and_eval(overridden_params):
     for p,v in overridden_params.items():
         params[p] = v
 
+    tf.random.set_seed(params['seed'])
+    np.random.seed(params['seed'])
     random.seed(params['seed'])
 
     ht = pd.read_csv("TheHandTaggedDataBaby.csv", comment="#")
