@@ -1,0 +1,13 @@
+
+TJ - write the modified "classify.py" script which:
+        input: name of a .csv  (ArizonaPolitics.csv)
+        output: a written csv  (ArizonaPolitics_processed.csv)
+
+VR/AK - locate all the freaking .csv files and run TJ's script on them all,
+    which will create a number of _processed.csv files.
+
+SD - where the heck are MY reddit threads?
+
+SD - stick all the processed.csv files into one big .csv file
+     load it
+     create a MG
