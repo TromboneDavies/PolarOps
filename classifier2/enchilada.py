@@ -18,6 +18,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import random
 import re
+import math
 import sys
 from sklearn.feature_selection import SelectKBest, f_classif
 import tensorflow as tf
@@ -29,7 +30,8 @@ from tensorflow.keras.layers import Dense, Dropout
 # See also https://scikit-learn.org/stable/modules/classes.html#text-feature-extraction-ref
 from sklearn.feature_extraction.text import TfidfVectorizer
 
-# Defaults; overridden by command-line args.
+# Defaults; selectively overridden by argument to build_and_eval()
+# (or via command-line args if this script is run as a main.)
 params = {
     'seed': 12345,
     'train_frac': .8,
@@ -94,10 +96,22 @@ def vectorize(train_texts, validate_texts=None, vocab=None):
 
 
 
-def build_and_eval(overridden_params):
+def build_and_eval(overridden_params={}):
+    """
+    overridden_params is an optional dictionary of parameter key/value pairs 
+    which will selectively override the defaults at the top of this file.
+
+    In the case where train_frac = 1, all data will be used for training, and
+    hence the evaluation step will be omitted.
+
+    This function returns the trained model object, as well as saving it to
+    the Polarops.model directory structure.
+    """
 
     for p,v in overridden_params.items():
         params[p] = v
+
+    evaluate = not math.isclose(params['train_frac'], 1)
 
     tf.random.set_seed(params['seed'])
     np.random.seed(params['seed'])
@@ -115,8 +129,11 @@ def build_and_eval(overridden_params):
         cleaned_texts[i] = clean(row.text)
     ht['text'] = cleaned_texts
 
-    train = ht.sample(frac=params['train_frac'])
-    validate = ht[~ht.index.isin(train.index)]
+    if evaluate:
+        train = ht.sample(frac=params['train_frac'])
+        validate = ht[~ht.index.isin(train.index)]
+    else:
+        train = ht
 
 
     # Build a classifier.
@@ -135,14 +152,19 @@ def build_and_eval(overridden_params):
     BATCH_SIZE = 128
 
 
-    train_vecs, validate_vecs, feature_names, _ = \
-        vectorize(train.text, validate.text)
+    if evaluate:
+        train_vecs, validate_vecs, feature_names, _ = \
+            vectorize(train.text, validate.text)
+    else:
+        train_vecs, _, _ = \
+            vectorize(train.text, None)
 
     selector = SelectKBest(f_classif, k=NUM_TOP_FEATURES)
     selector.fit(train_vecs, train.polarized)
     x_train = selector.transform(train_vecs).astype('float32')
-    x_validate = selector.transform(validate_vecs).astype('float32')
-    fns = selector.get_feature_names_out(feature_names)
+    if evaluate:
+        x_validate = selector.transform(validate_vecs).astype('float32')
+        fns = selector.get_feature_names_out(feature_names)
 
 
     model = models.Sequential()
@@ -158,22 +180,27 @@ def build_and_eval(overridden_params):
 
     callbacks = []
 
+    if evaluate:
+        eval_stuff = (x_validate, validate.polarized)
+    else:
+        eval_stuff = None
     history = model.fit(
         x_train,
         train.polarized,
         epochs=NUM_EPOCHS,
         callbacks=callbacks,
-        validation_data=(x_validate, validate.polarized),
+        validation_data=eval_stuff,
         verbose=0,  # Logs once per epoch.
         batch_size=BATCH_SIZE)
 
-    history = history.history
-    print('Validation accuracy: {acc}, loss: {loss}'.format(
-        acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
-    model.save('PolarOps.h5')
-
-    with open("results.csv","a",encoding="utf-8") as f:
-        print(f"""{params['seed']},{params['feats']},{params['layers']},{params['units']},{params['dropout']},{params['ngram']},{params['min_df']},{params['max_df']},{params['stop']},{history['val_acc'][-1]}""", file=f)
+    if evaluate:
+        history = history.history
+        print('Validation accuracy: {acc}, loss: {loss}'.format(
+            acc=history['val_acc'][-1], loss=history['val_loss'][-1]))
+        with open("results.csv","a",encoding="utf-8") as f:
+            print(f"""{params['seed']},{params['feats']},{params['layers']},{params['units']},{params['dropout']},{params['ngram']},{params['min_df']},{params['max_df']},{params['stop']},{history['val_acc'][-1]}""", file=f)
+    model.save('PolarOps.model')
+    return model
 
 
 
