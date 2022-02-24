@@ -33,13 +33,13 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 params = {
     'seed': 12345,
     'train_frac': .8,
-    'feats': 1000,
-    'layers': 2,
-    'units': 64,
-    'dropout': .2,
+    'feats': 2000,
+    'layers': 5,
+    'units': 96,
+    'dropout': .15,
     'ngram': 2,
-    'min_df': 0.0,
-    'max_df': 1.0,
+    'min_df': 0.001,
+    'max_df': .998,
     'stop': 'english'
 }
 
@@ -198,12 +198,16 @@ if __name__ == "__main__":
     if len(sys.argv) == 2 and sys.argv[1]=="SWEEP":
         params['feats'] = 2000  # seems good
         params['layers'] = 5  # seems marginally better than fewer
-        for min_df in np.arange(0,.015,.005):
-            for max_df in np.arange(.6,1.05,.05):
-                params['min_df'] = min_df
-                params['max_df'] = min(max_df,1)
-                print(f"Evaluating with min_df={min_df}, max_df={max_df}...")
-                build_and_eval(params)
+        params['min_df'] = .001  # meh, maybe slightly better if > 0
+        params['max_df'] = .998  # meh, ditto
+        params['dropout'] = .15  # slightly better
+        params['ngram'] = 2  # because this is what the google people say,
+                             # not because it really seemed better than 1 or 3
+        params['units'] = 96   # this seemed to give us the best
+        for units in np.arange(16,128+16,16):
+            params['units'] = units
+            print(f"Evaluating with units={units}...")
+            build_and_eval(params)
     else:
         for param in sys.argv[1:]:
             parts = param.split("=")
