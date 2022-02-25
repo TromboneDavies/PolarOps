@@ -6,8 +6,10 @@
 # want to run the enchilada.py script with command-line arg train_frac=1.
 
 import tensorflow as tf
+import sys
 import json
 import pickle
+import datetime
 import numpy as np
 import pandas as pd
 from sklearn.feature_selection import SelectKBest, f_classif
@@ -25,18 +27,32 @@ with open("vocab.json","r") as f:
 with open("selector.pickle","rb") as f:
     selector = pickle.load(f)
 
-# Initialize columns
-dates = np.array([])
-subreddits = np.array([])
-comment_ids = np.array([])
-predictions = np.array([])
-polar_scores = np.array([])
-
-# Open the file
+# Open the CSV file of threads.
+if len(sys.argv) < 2:
+    sys.exit("Usage: process.py file_with_threads.csv.")
 filename = sys.argv[1]
-thefile = pd.read_csv(filename)
 
-for row in thefile.itertuples():
+print(f"Loading {filename}...")
+threadsdf = pd.read_csv(filename)
+
+total_num_threads = len(threadsdf)
+print(f"Counted {total_num_threads} threads.")
+
+print(f"Converting times to month/year...")
+dtinfo = threadsdf.date.astype(int).astype("datetime64[s]")
+threadsdf['year'] = dtinfo.dt.year.astype(int)
+threadsdf['month_num'] = dtinfo.dt.month.astype(int)
+
+# Initialize columns of to-be-created DataFrame
+print(f"Initializing columns...")
+predictions = np.empty(total_num_threads,dtype=object)
+polar_scores = np.empty(total_num_threads,dtype=float)
+
+
+for i,row in enumerate(threadsdf.itertuples()):
+    if i % 10 == 0:
+        print(f"  Processing thread #{i} of {total_num_threads} "
+            f"({i/total_num_threads*100:.1f}%)...")
     # Get the vector of the text
     vec, _, _ = vectorize([clean(row.text)], None, vocab)
     # Transform the vector into a bunch of float values to give to the neural
@@ -45,20 +61,22 @@ for row in thefile.itertuples():
     # Get the score based on the neural nets analysis
     polar_score = model.predict(trans_vec)
     
-    # Add this rows information to the columns
-    dates = np.append(dates, row.date)
-    subreddits = np.append(subreddits, row.subreddit)
-    comment_ids = np.append(comment_ids, row.comment_id)
     if polar_score >= .5:
-        predictions = np.append(predictions, "polar")
+        predictions[i] = "polar"
     else:
-        predictions = np.append(predictions, "not polar")
-    polar_scores = np.append(polar_scores, polar_score)
+        predictions[i] = "nonpolar"
+    polar_scores[i] = polar_score
     
-# Create new dataframe to store the stuff being graphed
-tjs_df = pd.DataFrame({ 'date':dates, 'subreddit':subreddits,
-'comment_ids':comment_ids, 'predictions':predictions, 'polar_scores':
-polar_scores })
-# Output the dataframe to a csv file
-tjs_df.to_csv(filename[:-4] + "GraphReady.csv")
+# Create new DataFrame to store the predictions stuff to graph
+prediction_df = pd.DataFrame({
+    'year':threadsdf.year,
+    'month':threadsdf.month_num,
+    'subreddit':threadsdf.subreddit,
+    'comment_ids':threadsdf.comment_id,
+    'prediction':predictions,
+    'polar_score':polar_scores
+})
+
+# Output the predictions DataFrame to a csv file
+prediction_df.to_csv(filename[:-4] + "_predictions.csv", index=None)
 
