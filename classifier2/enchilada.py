@@ -45,7 +45,7 @@ params = {
     'ngram': 2,
     'min_df': 0.001,
     'max_df': .998,
-    'stop': 'english'
+    'stop': None,     # stopword removal not really compatible with ngrams
 }
 
 
@@ -158,7 +158,7 @@ def build_and_eval(overridden_params={}):
 
 
     if evaluate:
-        train_vecs, validate_vecs, feature_names,  = \
+        train_vecs, validate_vecs, feature_names, _  = \
             vectorize(train.text, validate.text)
     else:
         train_vecs, _, vocab = \
@@ -242,6 +242,7 @@ if __name__ == "__main__":
         params['dropout'] = .15  # slightly better
         params['ngram'] = 2  # because this is what the google people say,
                              # not because it really seemed better than 1 or 3
+        params['stop'] = "None"
         params['units'] = 96   # this seemed to give us the best
         for units in np.arange(16,128+16,16):
             params['units'] = units
