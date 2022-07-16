@@ -12,7 +12,7 @@ from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
-model = "SGD/SVM"   # or "MultinomialNB"
+model = "SGD/SVM"   # either "SGD/SVM" or "MultinomialNB"
 K = 10  # number of folds in cross-validated grid search
 
 np.set_printoptions(precision=3, suppress=True)
