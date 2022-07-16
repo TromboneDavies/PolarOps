@@ -1,5 +1,5 @@
-# Perform grid search for best parameters on count/TFIDF/SGDlinearSVM (and
-# on count/TFIDF/MultinomialNB).
+# Perform grid search for best parameters on count -> TFIDF -> either
+# SGDlinearSVM or MultinomialNB.
 
 import numpy as np
 import pandas as pd
@@ -7,11 +7,12 @@ import matplotlib.pyplot as plt
 import joblib    # to save/restore models
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.linear_model import SGDClassifier
-#from sklearn.naive_bayes import MultinomialNB
+from sklearn.naive_bayes import MultinomialNB
 from sklearn.pipeline import make_pipeline
 from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import classification_report
 
+model = "SGD/SVM"   # or "MultinomialNB"
 K = 10  # number of folds in cross-validated grid search
 
 np.set_printoptions(precision=3, suppress=True)
@@ -22,7 +23,7 @@ print(f"Read {len(threads)} threads.")
 classifier = make_pipeline(
     CountVectorizer(encoding="utf-8",lowercase=True),
     TfidfTransformer(),
-    #MultinomialNB()
+    MultinomialNB() if model == "MultinomialNB" else
     SGDClassifier(loss='hinge',  # linear SVM classifier
         penalty='l2',
         random_state=13,
@@ -38,7 +39,7 @@ parameters = {
     'countvectorizer__max_df': [0.8,0.9,1.0],
     'countvectorizer__binary': [True,False],
     'tfidftransformer__use_idf': [True,False],
-    #'multinomialnb__alpha': [0]
+    'multinomialnb__alpha' if model=="MultinomialNB" else
     'sgdclassifier__alpha': np.logspace(-4,-3,5)
 }
 
@@ -54,8 +55,8 @@ results = pd.DataFrame(gs.cv_results_)[['param_countvectorizer__ngram_range',
     'param_countvectorizer__max_df',
     'param_countvectorizer__binary',
     'param_tfidftransformer__use_idf',
+    'param_multinomialnb__alpha' if model=="MultinomialNB" else
     'param_sgdclassifier__alpha',
-    #'param_multinomialnb__alpha',
     'mean_test_score']]
 results.columns = [ col[col.find("__")+2:] if col.startswith("param") else col
     for col in results.columns ]
@@ -69,8 +70,8 @@ print("Saving best classifier in skpolarops.joblib...")
 joblib.dump(gs.best_estimator_, 'skpolarops.joblib')
 
 # Takeaways:
-# SGD with linear SVM is better than Multinomial NB with ~0 smoothing (~80%
-#   vs ~73%)
+# SGD with linear SVM is slightly better than Multinomial NB with ~0
+#   smoothing (~80% vs ~78%)
 # We definitely want:
 # - unigrams only
 # - either no stop words or a better stop words list than default "english"
